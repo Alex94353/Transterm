@@ -13,12 +13,19 @@ class TermController extends Controller
     public function index(Request $request): TermCollection
     {
         $query = Term::query()
-            ->withCount('comments')
-            ->withCount('translations')
+            ->withCount([
+                'comments',
+                'translations',
+            ])
             ->with([
-                'glossary',
-                'field',
-                'creator',
+                'glossary.translations.language',
+                'glossary.languagePair.sourceLanguage',
+                'glossary.languagePair.targetLanguage',
+                'field.fieldGroup',
+                'creator.profile',
+                'translations.language',
+                'translations.termReferences.reference',
+                'comments.user',
             ]);
 
         if ($request->filled('id')) {
@@ -34,10 +41,35 @@ class TermController extends Controller
         }
 
         if ($request->filled('created_by')) {
+            $query->where('created_by', $request->integer('created_by'));
+        }
+
+        if ($request->filled('approved')) {
+            $approved = filter_var($request->input('approved'), FILTER_VALIDATE_BOOLEAN);
+
+            $query->whereHas('glossary', function ($q) use ($approved) {
+                $q->where('approved', $approved);
+            });
+        }
+
+        if ($request->filled('is_public')) {
+            $isPublic = filter_var($request->input('is_public'), FILTER_VALIDATE_BOOLEAN);
+
+            $query->whereHas('glossary', function ($q) use ($isPublic) {
+                $q->where('is_public', $isPublic);
+            });
+        }
+
+        if ($request->filled('search')) {
             $search = trim((string) $request->input('search'));
 
             $query->whereHas('translations', function ($q) use ($search) {
-                $q->where('title', 'like', "%{$search}%");
+                $q->where('title', 'like', "%{$search}%")
+                    ->orWhere('plural', 'like', "%{$search}%")
+                    ->orWhere('definition', 'like', "%{$search}%")
+                    ->orWhere('context', 'like', "%{$search}%")
+                    ->orWhere('synonym', 'like', "%{$search}%")
+                    ->orWhere('notes', 'like', "%{$search}%");
             });
         }
 
@@ -51,9 +83,11 @@ class TermController extends Controller
     public function show(Term $term): TermResource
     {
         $term->load([
-            'glossary',
-            'field',
-            'creator',
+            'glossary.translations.language',
+            'glossary.languagePair.sourceLanguage',
+            'glossary.languagePair.targetLanguage',
+            'field.fieldGroup',
+            'creator.profile',
             'translations.language',
             'translations.termReferences.reference',
             'comments.user',

@@ -16,16 +16,62 @@ class TermResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'glossary_id' => (bool) $this->glossary_id,
-            'field_id' => (bool) $this->field_id,
-            'created_by' => $this->created_at,
+            'glossary_id' => $this->glossary_id,
+            'field_id' => $this->field_id,
+            'created_by' => $this->created_by,
+            'comments_count' => $this->whenCounted('comments'),
+            'translations_count' => $this->whenCounted('translations'),
+            'created_at' => $this->created_at,
+            'updated_at' => $this->updated_at,
 
-            'owner' => $this->whenLoaded('owner', function () {
+            'glossary' => $this->whenLoaded('glossary', function () {
                 return [
-                    'id' => $this->owner->id,
-                    'name' => $this->owner->name,
-                    'surname' => $this->owner->surname,
-                    'email' => $this->owner->email,
+                    'id' => $this->glossary->id,
+                    'language_pair_id' => $this->glossary->language_pair_id,
+                    'field_id' => $this->glossary->field_id,
+                    'created_by' => $this->glossary->created_by,
+                    'approved' => (bool) $this->glossary->approved,
+                    'is_public' => (bool) $this->glossary->is_public,
+                    'created_at' => $this->glossary->created_at,
+                    'updated_at' => $this->glossary->updated_at,
+
+                    'language_pair' => $this->glossary->relationLoaded('languagePair') && $this->glossary->languagePair
+                        ? [
+                            'id' => $this->glossary->languagePair->id,
+                            'source_language' => $this->glossary->languagePair->relationLoaded('sourceLanguage') && $this->glossary->languagePair->sourceLanguage
+                                ? [
+                                    'id' => $this->glossary->languagePair->sourceLanguage->id,
+                                    'name' => $this->glossary->languagePair->sourceLanguage->name,
+                                    'code' => $this->glossary->languagePair->sourceLanguage->code,
+                                ]
+                                : null,
+                            'target_language' => $this->glossary->languagePair->relationLoaded('targetLanguage') && $this->glossary->languagePair->targetLanguage
+                                ? [
+                                    'id' => $this->glossary->languagePair->targetLanguage->id,
+                                    'name' => $this->glossary->languagePair->targetLanguage->name,
+                                    'code' => $this->glossary->languagePair->targetLanguage->code,
+                                ]
+                                : null,
+                        ]
+                        : null,
+
+                    'translations' => $this->glossary->relationLoaded('translations')
+                        ? $this->glossary->translations->map(function ($translation) {
+                            return [
+                                'id' => $translation->id,
+                                'language_id' => $translation->language_id,
+                                'language' => $translation->relationLoaded('language') && $translation->language
+                                    ? [
+                                        'id' => $translation->language->id,
+                                        'name' => $translation->language->name,
+                                        'code' => $translation->language->code,
+                                    ]
+                                    : null,
+                                'title' => $translation->title,
+                                'description' => $translation->description ?? null,
+                            ];
+                        })
+                        : [],
                 ];
             }),
 
@@ -34,24 +80,27 @@ class TermResource extends JsonResource
                     'id' => $this->field->id,
                     'name' => $this->field->name,
                     'code' => $this->field->code,
+                    'field_group' => $this->field->relationLoaded('fieldGroup') && $this->field->fieldGroup
+                        ? [
+                            'id' => $this->field->fieldGroup->id,
+                            'name' => $this->field->fieldGroup->name,
+                            'code' => $this->field->fieldGroup->code,
+                        ]
+                        : null,
                 ];
             }),
 
-            'language_pair' => $this->whenLoaded('languagePair', function () {
+            'creator' => $this->whenLoaded('creator', function () {
                 return [
-                    'id' => $this->languagePair->id,
-                    'source_language' => $this->languagePair->relationLoaded('sourceLanguage') && $this->languagePair->sourceLanguage
+                    'id' => $this->creator->id,
+                    'username' => $this->creator->username,
+                    'email' => $this->creator->email,
+                    'name' => $this->creator->name,
+                    'surname' => $this->creator->surname,
+                    'profile' => $this->creator->relationLoaded('profile') && $this->creator->profile
                         ? [
-                            'id' => $this->languagePair->sourceLanguage->id,
-                            'name' => $this->languagePair->sourceLanguage->name,
-                            'code' => $this->languagePair->sourceLanguage->code,
-                        ]
-                        : null,
-                    'target_language' => $this->languagePair->relationLoaded('targetLanguage') && $this->languagePair->targetLanguage
-                        ? [
-                            'id' => $this->languagePair->targetLanguage->id,
-                            'name' => $this->languagePair->targetLanguage->name,
-                            'code' => $this->languagePair->targetLanguage->code,
+                            'country_id' => $this->creator->profile->country_id,
+                            'website' => $this->creator->profile->website,
                         ]
                         : null,
                 ];
@@ -61,9 +110,65 @@ class TermResource extends JsonResource
                 return $this->translations->map(function ($translation) {
                     return [
                         'id' => $translation->id,
+                        'term_id' => $translation->term_id,
                         'language_id' => $translation->language_id,
+                        'language' => $translation->relationLoaded('language') && $translation->language
+                            ? [
+                                'id' => $translation->language->id,
+                                'name' => $translation->language->name,
+                                'code' => $translation->language->code,
+                            ]
+                            : null,
                         'title' => $translation->title,
-                        'description' => $translation->description,
+                        'plural' => $translation->plural,
+                        'definition' => $translation->definition,
+                        'context' => $translation->context,
+                        'synonym' => $translation->synonym,
+                        'notes' => $translation->notes,
+                        'references' => $translation->relationLoaded('termReferences')
+                            ? $translation->termReferences->map(function ($termReference) {
+                                return [
+                                    'id' => $termReference->id,
+                                    'term_translation_id' => $termReference->term_translation_id,
+                                    'reference_id' => $termReference->reference_id,
+                                    'reference_type' => $termReference->reference_type ?? null,
+                                    'reference' => $termReference->relationLoaded('reference') && $termReference->reference
+                                        ? [
+                                            'id' => $termReference->reference->id,
+                                            'user_id' => $termReference->reference->user_id,
+                                            'source' => $termReference->reference->source,
+                                            'type' => $termReference->reference->type,
+                                            'language_id' => $termReference->reference->language_id ?? null,
+                                            'created_at' => $termReference->reference->created_at,
+                                            'updated_at' => $termReference->reference->updated_at,
+                                        ]
+                                        : null,
+                                ];
+                            })
+                            : [],
+                    ];
+                });
+            }),
+
+            'comments' => $this->whenLoaded('comments', function () {
+                return $this->comments->map(function ($comment) {
+                    return [
+                        'id' => $comment->id,
+                        'term_id' => $comment->term_id,
+                        'user_id' => $comment->user_id,
+                        'body' => $comment->body,
+                        'is_spam' => (bool) $comment->is_spam,
+                        'created_at' => $comment->created_at,
+                        'updated_at' => $comment->updated_at,
+                        'user' => $comment->relationLoaded('user') && $comment->user
+                            ? [
+                                'id' => $comment->user->id,
+                                'username' => $comment->user->username,
+                                'email' => $comment->user->email,
+                                'name' => $comment->user->name,
+                                'surname' => $comment->user->surname,
+                            ]
+                            : null,
                     ];
                 });
             }),
