@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\GlossaryController;
 use App\Http\Controllers\Api\LanguageController;
 use App\Http\Controllers\Api\LanguagePairController;
 use App\Http\Controllers\Api\TermController;
+use App\Http\Controllers\Api\FieldGroupController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -26,3 +27,6 @@ Route::get('/languages/{language}', [LanguageController::class, 'show']);
 
 Route::get('/language-pairs', [LanguagePairController::class, 'index']);
 Route::get('/language-pairs/{languagePair}', [LanguagePairController::class, 'show']);
+
+Route::get('/field-groups', [FieldGroupController::class, 'index']);
+Route::get('/field-groups/{fieldGroup}', [FieldGroupController::class, 'show']);
