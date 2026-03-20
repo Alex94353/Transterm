@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\LanguageController;
 use App\Http\Controllers\Api\LanguagePairController;
 use App\Http\Controllers\Api\TermController;
 use App\Http\Controllers\Api\FieldGroupController;
+use App\Http\Controllers\Api\ReferenceController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -30,3 +31,6 @@ Route::get('/language-pairs/{languagePair}', [LanguagePairController::class, 'sh
 
 Route::get('/field-groups', [FieldGroupController::class, 'index']);
 Route::get('/field-groups/{fieldGroup}', [FieldGroupController::class, 'show']);
+
+Route::get('/references', [ReferenceController::class, 'index']);
+Route::get('/references/{reference}', [ReferenceController::class, 'show']);
