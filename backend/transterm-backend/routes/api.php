@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\TermController;
 use App\Http\Controllers\Api\FieldGroupController;
 use App\Http\Controllers\Api\ReferenceController;
 use App\Http\Controllers\Api\Auth\AuthController;
+use App\Http\Controllers\Api\User\ProfileController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -42,3 +43,9 @@ Route::get('/field-groups/{fieldGroup}', [FieldGroupController::class, 'show']);
 
 Route::get('/references', [ReferenceController::class, 'index']);
 Route::get('/references/{reference}', [ReferenceController::class, 'show']);
+
+
+Route::middleware('auth:sanctum')->prefix('user')->group(function () {
+    Route::get('/profile', [ProfileController::class, 'show']);
+    Route::put('/profile', [ProfileController::class, 'update']);
+});
