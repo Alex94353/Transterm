@@ -7,12 +7,20 @@ use App\Http\Controllers\Api\LanguagePairController;
 use App\Http\Controllers\Api\TermController;
 use App\Http\Controllers\Api\FieldGroupController;
 use App\Http\Controllers\Api\ReferenceController;
+use App\Http\Controllers\Api\Auth\AuthController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/user', function (Request $request) {
-    return $request->user();
-})->middleware('auth:sanctum');
+
+Route::prefix('auth')->group(function () {
+    Route::post('/register', [AuthController::class, 'register']);
+    Route::post('/login', [AuthController::class, 'login']);
+
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::post('/logout', [AuthController::class, 'logout']);
+        Route::get('/me', [AuthController::class, 'me']);
+    });
+});
 
 Route::get('/glossaries', [GlossaryController::class, 'index']);
 Route::get('/glossaries/{glossary}', [GlossaryController::class, 'show']);
