@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\CountryController;
 use App\Http\Controllers\Api\Auth\AuthController;
 use App\Http\Controllers\Api\User\ProfileController;
 use App\Http\Controllers\Api\User\CommentController;
+use App\Http\Controllers\Api\Admin\CommentModerationController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -36,6 +37,13 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     Route::post('/terms/{term}/comments', [CommentController::class, 'store']);
+});
+
+Route::middleware('auth:sanctum')->prefix('admin')->group(function () {
+    Route::get('/comments', [CommentModerationController::class, 'index']);
+    Route::patch('/comments/{comment}/spam', [CommentModerationController::class, 'markSpam']);
+    Route::patch('/comments/{comment}/unspam', [CommentModerationController::class, 'unmarkSpam']);
+    Route::delete('/comments/{comment}', [CommentModerationController::class, 'destroy']);
 });
 
 Route::get('/glossaries', [GlossaryController::class, 'index']);
