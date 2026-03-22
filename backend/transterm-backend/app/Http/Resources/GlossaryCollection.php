@@ -19,15 +19,4 @@ class GlossaryCollection extends ResourceCollection
         ];
     }
 
-    public function with(Request $request): array
-    {
-        return [
-            'meta' => [
-                'current_page' => $this->currentPage(),
-                'last_page' => $this->lastPage(),
-                'per_page' => $this->perPage(),
-                'total' => $this->total(),
-            ],
-        ];
-    }
 }

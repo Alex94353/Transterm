@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\User\ProfileController;
 use App\Http\Controllers\Api\User\CommentController;
 use App\Http\Controllers\Api\Admin\CommentModerationController;
 use App\Http\Controllers\Api\Admin\TermController as AdminTermController;
+use App\Http\Controllers\Api\Admin\GlossaryController as AdminGlossaryController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -51,6 +52,12 @@ Route::middleware('auth:sanctum')->prefix('admin')->group(function () {
     Route::post('/terms', [AdminTermController::class, 'store']);
     Route::put('/terms/{term}', [AdminTermController::class, 'update']);
     Route::delete('/terms/{term}', [AdminTermController::class, 'destroy']);
+
+    Route::get('/glossaries', [AdminGlossaryController::class, 'index']);
+    Route::get('/glossaries/{glossary}', [AdminGlossaryController::class, 'show']);
+    Route::post('/glossaries', [AdminGlossaryController::class, 'store']);
+    Route::put('/glossaries/{glossary}', [AdminGlossaryController::class, 'update']);
+    Route::delete('/glossaries/{glossary}', [AdminGlossaryController::class, 'destroy']);
 });
 
 Route::get('/glossaries', [GlossaryController::class, 'index']);
