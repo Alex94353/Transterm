@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\FieldGroupController;
 use App\Http\Controllers\Api\ReferenceController;
 use App\Http\Controllers\Api\Auth\AuthController;
 use App\Http\Controllers\Api\User\ProfileController;
+use App\Http\Controllers\Api\User\CommentController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -21,6 +22,19 @@ Route::prefix('auth')->group(function () {
         Route::post('/logout', [AuthController::class, 'logout']);
         Route::get('/me', [AuthController::class, 'me']);
     });
+});
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::prefix('user')->group(function () {
+        Route::get('/profile', [ProfileController::class, 'show']);
+        Route::put('/profile', [ProfileController::class, 'update']);
+
+        Route::get('/comments', [CommentController::class, 'index']);
+        Route::put('/comments/{comment}', [CommentController::class, 'update']);
+        Route::delete('/comments/{comment}', [CommentController::class, 'destroy']);
+    });
+
+    Route::post('/terms/{term}/comments', [CommentController::class, 'store']);
 });
 
 Route::get('/glossaries', [GlossaryController::class, 'index']);
@@ -49,3 +63,5 @@ Route::middleware('auth:sanctum')->prefix('user')->group(function () {
     Route::get('/profile', [ProfileController::class, 'show']);
     Route::put('/profile', [ProfileController::class, 'update']);
 });
+
+
