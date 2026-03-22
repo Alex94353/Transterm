@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\User\CommentController;
 use App\Http\Controllers\Api\Admin\CommentModerationController;
 use App\Http\Controllers\Api\Admin\TermController as AdminTermController;
 use App\Http\Controllers\Api\Admin\GlossaryController as AdminGlossaryController;
+use App\Http\Controllers\Api\Admin\UserManagementController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -58,6 +59,13 @@ Route::middleware('auth:sanctum')->prefix('admin')->group(function () {
     Route::post('/glossaries', [AdminGlossaryController::class, 'store']);
     Route::put('/glossaries/{glossary}', [AdminGlossaryController::class, 'update']);
     Route::delete('/glossaries/{glossary}', [AdminGlossaryController::class, 'destroy']);
+
+    Route::get('/users', [UserManagementController::class, 'index']);
+    Route::get('/users/{user}', [UserManagementController::class, 'show']);
+    Route::put('/users/{user}', [UserManagementController::class, 'update']);
+    Route::patch('/users/{user}/ban', [UserManagementController::class, 'ban']);
+    Route::patch('/users/{user}/unban', [UserManagementController::class, 'unban']);
+
 });
 
 Route::get('/glossaries', [GlossaryController::class, 'index']);
