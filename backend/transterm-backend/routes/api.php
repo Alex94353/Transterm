@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\Auth\AuthController;
 use App\Http\Controllers\Api\User\ProfileController;
 use App\Http\Controllers\Api\User\CommentController;
 use App\Http\Controllers\Api\Admin\CommentModerationController;
+use App\Http\Controllers\Api\Admin\TermController as AdminTermController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -44,6 +45,12 @@ Route::middleware('auth:sanctum')->prefix('admin')->group(function () {
     Route::patch('/comments/{comment}/spam', [CommentModerationController::class, 'markSpam']);
     Route::patch('/comments/{comment}/unspam', [CommentModerationController::class, 'unmarkSpam']);
     Route::delete('/comments/{comment}', [CommentModerationController::class, 'destroy']);
+
+    Route::get('/terms', [AdminTermController::class, 'index']);
+    Route::get('/terms/{term}', [AdminTermController::class, 'show']);
+    Route::post('/terms', [AdminTermController::class, 'store']);
+    Route::put('/terms/{term}', [AdminTermController::class, 'update']);
+    Route::delete('/terms/{term}', [AdminTermController::class, 'destroy']);
 });
 
 Route::get('/glossaries', [GlossaryController::class, 'index']);
