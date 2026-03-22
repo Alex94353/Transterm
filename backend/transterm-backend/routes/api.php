@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\LanguagePairController;
 use App\Http\Controllers\Api\TermController;
 use App\Http\Controllers\Api\FieldGroupController;
 use App\Http\Controllers\Api\ReferenceController;
+use App\Http\Controllers\Api\CountryController;
 use App\Http\Controllers\Api\Auth\AuthController;
 use App\Http\Controllers\Api\User\ProfileController;
 use App\Http\Controllers\Api\User\CommentController;
@@ -58,6 +59,8 @@ Route::get('/field-groups/{fieldGroup}', [FieldGroupController::class, 'show']);
 Route::get('/references', [ReferenceController::class, 'index']);
 Route::get('/references/{reference}', [ReferenceController::class, 'show']);
 
+Route::get('/countries', [CountryController::class, 'index']);
+Route::get('/countries/{country}', [CountryController::class, 'show']);
 
 Route::middleware('auth:sanctum')->prefix('user')->group(function () {
     Route::get('/profile', [ProfileController::class, 'show']);
