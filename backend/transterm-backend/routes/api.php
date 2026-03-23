@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\Admin\CommentModerationController;
 use App\Http\Controllers\Api\Admin\TermController as AdminTermController;
 use App\Http\Controllers\Api\Admin\GlossaryController as AdminGlossaryController;
 use App\Http\Controllers\Api\Admin\ReferenceController as AdminReferenceController;
+use App\Http\Controllers\Api\Admin\FieldController as AdminFieldController;
 use App\Http\Controllers\Api\Admin\UserManagementController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -72,6 +73,12 @@ Route::middleware('auth:sanctum')->prefix('admin')->group(function () {
     Route::post('/references', [AdminReferenceController::class, 'store']);
     Route::put('/references/{reference}', [AdminReferenceController::class, 'update']);
     Route::delete('/references/{reference}', [AdminReferenceController::class, 'destroy']);
+
+    Route::get('/fields', [AdminFieldController::class, 'index']);
+    Route::get('/fields/{field}', [AdminFieldController::class, 'show']);
+    Route::post('/fields', [AdminFieldController::class, 'store']);
+    Route::put('/fields/{field}', [AdminFieldController::class, 'update']);
+    Route::delete('/fields/{field}', [AdminFieldController::class, 'destroy']);
 
 });
 
