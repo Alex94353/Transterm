@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Models\Role;
 use App\Models\User;
 use App\Models\UserProfile;
 use Illuminate\Console\Command;
@@ -44,7 +45,6 @@ class ImportLegacyUsers extends Command
             $user = User::updateOrCreate(
                 ['id' => $legacyUser->id],
                 [
-                    'role_id'           => $this->mapRoleId($legacyUser->role_id),
                     'username'          => $this->nullIfEmpty($legacyUser->username),
                     'name'              => $this->nullIfEmpty($legacyUser->name),
                     'surname'           => $this->nullIfEmpty($legacyUser->surname),
@@ -60,6 +60,13 @@ class ImportLegacyUsers extends Command
                     'email_verified_at' => null,
                 ]
             );
+
+            $mappedRoleId = $this->mapRoleId($legacyUser->role_id);
+            $role = Role::query()->find($mappedRoleId);
+
+            if ($role) {
+                $user->syncRoles([$role]);
+            }
 
             UserProfile::updateOrCreate(
                 ['user_id' => $user->id],

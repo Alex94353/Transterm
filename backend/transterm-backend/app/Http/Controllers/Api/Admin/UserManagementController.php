@@ -13,7 +13,7 @@ class UserManagementController extends Controller
     {
         $query = User::query()
             ->with([
-                'role.permissions',
+                'roles.permissions',
                 'profile',
                 'country',
             ]);
@@ -23,7 +23,10 @@ class UserManagementController extends Controller
         }
 
         if ($request->filled('role_id')) {
-            $query->where('role_id', $request->integer('role_id'));
+            $roleId = $request->integer('role_id');
+            $query->whereHas('roles', function ($q) use ($roleId) {
+                $q->where('roles.id', $roleId);
+            });
         }
 
         if ($request->filled('activated')) {
@@ -72,7 +75,7 @@ class UserManagementController extends Controller
     public function show(User $user): JsonResponse
     {
         $user->load([
-            'role.permissions',
+            'roles.permissions',
             'profile',
             'country',
         ]);
@@ -96,10 +99,17 @@ class UserManagementController extends Controller
             'country_id' => ['nullable', 'integer', 'exists:countries,id'],
         ]);
 
+        $roleId = $validated['role_id'] ?? null;
+        unset($validated['role_id']);
+
         $user->update($validated);
 
+        if ($roleId !== null) {
+            $user->syncRoles([$roleId]);
+        }
+
         $user->load([
-            'role.permissions',
+            'roles.permissions',
             'profile',
             'country',
         ]);
@@ -124,7 +134,7 @@ class UserManagementController extends Controller
         return response()->json([
             'message' => 'User banned successfully.',
             'user' => $user->fresh([
-                'role.permissions',
+                'roles.permissions',
                 'profile',
                 'country',
             ]),
@@ -141,7 +151,7 @@ class UserManagementController extends Controller
         return response()->json([
             'message' => 'User unbanned successfully.',
             'user' => $user->fresh([
-                'role.permissions',
+                'roles.permissions',
                 'profile',
                 'country',
             ]),

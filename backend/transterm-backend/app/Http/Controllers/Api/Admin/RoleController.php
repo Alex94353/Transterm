@@ -65,11 +65,13 @@ class RoleController extends Controller
         $validated = $request->validate([
             'parent_id' => ['nullable', 'integer', 'exists:roles,id'],
             'name' => ['required', 'string', 'max:30'],
+            'guard_name' => ['sometimes', 'string', 'max:255'],
         ]);
 
         $role = Role::create([
             'parent_id' => $validated['parent_id'] ?? null,
             'name' => $validated['name'],
+            'guard_name' => $validated['guard_name'] ?? 'web',
         ]);
 
         $role->load([
@@ -91,6 +93,7 @@ class RoleController extends Controller
         $validated = $request->validate([
             'parent_id' => ['nullable', 'integer', 'exists:roles,id'],
             'name' => ['sometimes', 'string', 'max:30'],
+            'guard_name' => ['sometimes', 'string', 'max:255'],
         ]);
 
         if (isset($validated['parent_id']) && (int) $validated['parent_id'] === (int) $role->id) {

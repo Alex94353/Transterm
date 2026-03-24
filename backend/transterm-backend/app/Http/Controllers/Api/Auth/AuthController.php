@@ -80,7 +80,7 @@ class AuthController extends Controller
     {
         $user = $request->user()->load([
             'profile.country',
-            'role.permissions',
+            'roles.permissions',
         ]);
 
         return response()->json([

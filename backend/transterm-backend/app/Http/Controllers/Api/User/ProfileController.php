@@ -12,7 +12,7 @@ class ProfileController extends Controller
     {
         $user = $request->user()->load([
             'profile.country',
-            'role.permissions',
+            'roles.permissions',
         ]);
 
         return response()->json([
@@ -39,7 +39,7 @@ class ProfileController extends Controller
             'message' => 'Profile updated successfully.',
             'user' => $user->fresh()->load([
                 'profile.country',
-                'role.permissions',
+                'roles.permissions',
             ]),
         ]);
     }

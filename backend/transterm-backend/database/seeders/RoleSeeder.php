@@ -24,6 +24,7 @@ class RoleSeeder extends Seeder
                 ['id' => $role['id']],
                 [
                     'name' => $role['name'],
+                    'guard_name' => 'web',
                     'parent_id' => null,
                 ]
             );

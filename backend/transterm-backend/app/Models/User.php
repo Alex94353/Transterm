@@ -10,11 +10,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Notifications\Notifiable;
+use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasApiTokens, HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable, HasRoles;
 
     /**
      * The attributes that are mass assignable.
@@ -23,7 +24,6 @@ class User extends Authenticatable
      */
     protected $fillable = [
         'id',
-        'role_id',
         'username',
         'name',
         'surname',
@@ -62,11 +62,6 @@ class User extends Authenticatable
             'banned' => 'boolean',
             'visible' => 'boolean',
         ];
-    }
-
-    public function role(): BelongsTo
-    {
-        return $this->belongsTo(Role::class);
     }
 
     public function country(): BelongsTo

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Permission;
+use App\Models\Role;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -13,7 +14,7 @@ class PermissionController extends Controller
     {
         $query = Permission::query()
             ->with([
-                'role.parent',
+                'roles.parent',
             ]);
 
         if ($request->filled('id')) {
@@ -21,12 +22,15 @@ class PermissionController extends Controller
         }
 
         if ($request->filled('role_id')) {
-            $query->where('role_id', $request->integer('role_id'));
+            $roleId = $request->integer('role_id');
+            $query->whereHas('roles', function ($q) use ($roleId) {
+                $q->where('roles.id', $roleId);
+            });
         }
 
         if ($request->filled('search')) {
             $search = trim((string) $request->input('search'));
-            $query->where('data', 'like', "%{$search}%");
+            $query->where('name', 'like', "%{$search}%");
         }
 
         $permissions = $query->orderByDesc('id')
@@ -39,7 +43,7 @@ class PermissionController extends Controller
     public function show(Permission $permission): JsonResponse
     {
         $permission->load([
-            'role.parent',
+            'roles.parent',
         ]);
 
         return response()->json([
@@ -50,17 +54,40 @@ class PermissionController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'role_id' => ['required', 'integer', 'exists:roles,id'],
-            'data' => ['nullable', 'array'],
+            'name' => ['required', 'string', 'max:255'],
+            'guard_name' => ['sometimes', 'string', 'max:255'],
+            'role_ids' => ['sometimes', 'array'],
+            'role_ids.*' => ['integer', 'exists:roles,id'],
         ]);
+
+        $guardName = $validated['guard_name'] ?? 'web';
+
+        $exists = Permission::query()
+            ->where('name', $validated['name'])
+            ->where('guard_name', $guardName)
+            ->exists();
+
+        if ($exists) {
+            return response()->json([
+                'message' => 'Permission with this name and guard already exists.',
+            ], 422);
+        }
 
         $permission = Permission::create([
-            'role_id' => $validated['role_id'],
-            'data' => $validated['data'] ?? null,
+            'name' => $validated['name'],
+            'guard_name' => $guardName,
         ]);
 
+        if (! empty($validated['role_ids'])) {
+            $roles = Role::query()
+                ->whereIn('id', $validated['role_ids'])
+                ->get();
+
+            $permission->syncRoles($roles);
+        }
+
         $permission->load([
-            'role.parent',
+            'roles.parent',
         ]);
 
         return response()->json([
@@ -72,14 +99,42 @@ class PermissionController extends Controller
     public function update(Request $request, Permission $permission): JsonResponse
     {
         $validated = $request->validate([
-            'role_id' => ['sometimes', 'integer', 'exists:roles,id'],
-            'data' => ['nullable', 'array'],
+            'name' => ['sometimes', 'string', 'max:255'],
+            'guard_name' => ['sometimes', 'string', 'max:255'],
+            'role_ids' => ['sometimes', 'array'],
+            'role_ids.*' => ['integer', 'exists:roles,id'],
         ]);
 
-        $permission->update($validated);
+        $nextName = $validated['name'] ?? $permission->name;
+        $nextGuardName = $validated['guard_name'] ?? $permission->guard_name;
+
+        $exists = Permission::query()
+            ->where('name', $nextName)
+            ->where('guard_name', $nextGuardName)
+            ->where('id', '!=', $permission->id)
+            ->exists();
+
+        if ($exists) {
+            return response()->json([
+                'message' => 'Permission with this name and guard already exists.',
+            ], 422);
+        }
+
+        $permission->update([
+            'name' => $nextName,
+            'guard_name' => $nextGuardName,
+        ]);
+
+        if (array_key_exists('role_ids', $validated)) {
+            $roles = Role::query()
+                ->whereIn('id', $validated['role_ids'] ?? [])
+                ->get();
+
+            $permission->syncRoles($roles);
+        }
 
         $permission->load([
-            'role.parent',
+            'roles.parent',
         ]);
 
         return response()->json([
