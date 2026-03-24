@@ -17,7 +17,10 @@ use App\Http\Controllers\Api\Admin\GlossaryController as AdminGlossaryController
 use App\Http\Controllers\Api\Admin\ReferenceController as AdminReferenceController;
 use App\Http\Controllers\Api\Admin\FieldController as AdminFieldController;
 use App\Http\Controllers\Api\Admin\FieldGroupController as AdminFieldGroupController;
+use App\Http\Controllers\Api\Admin\LanguageController as AdminLanguageController;
 use App\Http\Controllers\Api\Admin\LanguagePairController as AdminLanguagePairController;
+use App\Http\Controllers\Api\Admin\PermissionController as AdminPermissionController;
+use App\Http\Controllers\Api\Admin\RoleController as AdminRoleController;
 use App\Http\Controllers\Api\Admin\UserManagementController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -93,6 +96,24 @@ Route::middleware('auth:sanctum')->prefix('admin')->group(function () {
     Route::post('/language-pairs', [AdminLanguagePairController::class, 'store']);
     Route::put('/language-pairs/{languagePair}', [AdminLanguagePairController::class, 'update']);
     Route::delete('/language-pairs/{languagePair}', [AdminLanguagePairController::class, 'destroy']);
+
+    Route::get('/languages', [AdminLanguageController::class, 'index']);
+    Route::get('/languages/{language}', [AdminLanguageController::class, 'show']);
+    Route::post('/languages', [AdminLanguageController::class, 'store']);
+    Route::put('/languages/{language}', [AdminLanguageController::class, 'update']);
+    Route::delete('/languages/{language}', [AdminLanguageController::class, 'destroy']);
+
+    Route::get('/roles', [AdminRoleController::class, 'index']);
+    Route::get('/roles/{role}', [AdminRoleController::class, 'show']);
+    Route::post('/roles', [AdminRoleController::class, 'store']);
+    Route::put('/roles/{role}', [AdminRoleController::class, 'update']);
+    Route::delete('/roles/{role}', [AdminRoleController::class, 'destroy']);
+
+    Route::get('/permissions', [AdminPermissionController::class, 'index']);
+    Route::get('/permissions/{permission}', [AdminPermissionController::class, 'show']);
+    Route::post('/permissions', [AdminPermissionController::class, 'store']);
+    Route::put('/permissions/{permission}', [AdminPermissionController::class, 'update']);
+    Route::delete('/permissions/{permission}', [AdminPermissionController::class, 'destroy']);
 
 });
 
