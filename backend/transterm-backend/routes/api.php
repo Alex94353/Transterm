@@ -17,6 +17,7 @@ use App\Http\Controllers\Api\Admin\GlossaryController as AdminGlossaryController
 use App\Http\Controllers\Api\Admin\ReferenceController as AdminReferenceController;
 use App\Http\Controllers\Api\Admin\FieldController as AdminFieldController;
 use App\Http\Controllers\Api\Admin\FieldGroupController as AdminFieldGroupController;
+use App\Http\Controllers\Api\Admin\LanguagePairController as AdminLanguagePairController;
 use App\Http\Controllers\Api\Admin\UserManagementController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -86,6 +87,12 @@ Route::middleware('auth:sanctum')->prefix('admin')->group(function () {
     Route::post('/field-groups', [AdminFieldGroupController::class, 'store']);
     Route::put('/field-groups/{fieldGroup}', [AdminFieldGroupController::class, 'update']);
     Route::delete('/field-groups/{fieldGroup}', [AdminFieldGroupController::class, 'destroy']);
+
+    Route::get('/language-pairs', [AdminLanguagePairController::class, 'index']);
+    Route::get('/language-pairs/{languagePair}', [AdminLanguagePairController::class, 'show']);
+    Route::post('/language-pairs', [AdminLanguagePairController::class, 'store']);
+    Route::put('/language-pairs/{languagePair}', [AdminLanguagePairController::class, 'update']);
+    Route::delete('/language-pairs/{languagePair}', [AdminLanguagePairController::class, 'destroy']);
 
 });
 
