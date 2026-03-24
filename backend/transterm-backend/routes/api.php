@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\Admin\TermController as AdminTermController;
 use App\Http\Controllers\Api\Admin\GlossaryController as AdminGlossaryController;
 use App\Http\Controllers\Api\Admin\ReferenceController as AdminReferenceController;
 use App\Http\Controllers\Api\Admin\FieldController as AdminFieldController;
+use App\Http\Controllers\Api\Admin\FieldGroupController as AdminFieldGroupController;
 use App\Http\Controllers\Api\Admin\UserManagementController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -79,6 +80,12 @@ Route::middleware('auth:sanctum')->prefix('admin')->group(function () {
     Route::post('/fields', [AdminFieldController::class, 'store']);
     Route::put('/fields/{field}', [AdminFieldController::class, 'update']);
     Route::delete('/fields/{field}', [AdminFieldController::class, 'destroy']);
+
+    Route::get('/field-groups', [AdminFieldGroupController::class, 'index']);
+    Route::get('/field-groups/{fieldGroup}', [AdminFieldGroupController::class, 'show']);
+    Route::post('/field-groups', [AdminFieldGroupController::class, 'store']);
+    Route::put('/field-groups/{fieldGroup}', [AdminFieldGroupController::class, 'update']);
+    Route::delete('/field-groups/{fieldGroup}', [AdminFieldGroupController::class, 'destroy']);
 
 });
 
