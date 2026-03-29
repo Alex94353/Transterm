@@ -1,0 +1,341 @@
+@import url('https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&display=swap');
+
+:root {
+  --tt-accent: #d1007b;
+  --tt-accent-hover: #b30069;
+  --tt-ink: #1f2a44;
+  --tt-muted: #5d6a85;
+  --tt-surface: #ffffff;
+  --tt-surface-soft: #f8f9fc;
+  --tt-border: #dfe4ef;
+
+  --el-color-primary: var(--tt-accent);
+  --el-color-primary-light-3: #dc4b9f;
+  --el-color-primary-light-5: #e47db9;
+  --el-color-primary-light-7: #edafd3;
+  --el-color-primary-light-8: #f3c8e1;
+  --el-color-primary-light-9: #f8e0ee;
+  --el-color-primary-dark-2: #a40062;
+  --el-text-color-primary: var(--tt-ink);
+  --el-text-color-regular: var(--tt-muted);
+  --el-border-color: var(--tt-border);
+  --el-bg-color: var(--tt-surface-soft);
+  --el-bg-color-page: var(--tt-surface-soft);
+  --el-bg-color-overlay: var(--tt-surface);
+  --el-fill-color-blank: var(--tt-surface);
+  --el-fill-color-light: #f3f6fb;
+  --el-fill-color: #eef2f8;
+  --el-mask-color: rgba(16, 22, 38, 0.72);
+}
+
+html.dark-theme {
+  --tt-ink: #edf2ff;
+  --tt-muted: #a7b4cf;
+  --tt-surface: #12192a;
+  --tt-surface-soft: #0b1120;
+  --tt-border: #24304a;
+
+  --el-text-color-primary: var(--tt-ink);
+  --el-text-color-regular: var(--tt-muted);
+  --el-border-color: var(--tt-border);
+  --el-bg-color: var(--tt-surface-soft);
+  --el-bg-color-page: var(--tt-surface-soft);
+  --el-bg-color-overlay: var(--tt-surface);
+  --el-fill-color-blank: var(--tt-surface);
+  --el-fill-color-light: #1a2439;
+  --el-fill-color: #202b42;
+  --el-mask-color: rgba(4, 8, 16, 0.8);
+  color-scheme: dark;
+}
+
+html,
+body,
+#app {
+  font-family: 'Source Sans 3', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  color: var(--tt-ink);
+  background: var(--tt-surface-soft);
+}
+
+body {
+  margin: 0;
+}
+
+html,
+body,
+#app,
+.el-card,
+.el-menu,
+.el-footer,
+.el-header {
+  transition: background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+a {
+  color: var(--tt-accent);
+}
+
+a:hover {
+  color: var(--tt-accent-hover);
+}
+
+.el-button--primary {
+  font-weight: 700;
+}
+
+.el-input__wrapper,
+.el-select__wrapper,
+.el-textarea__inner,
+.el-input__inner {
+  background: var(--el-fill-color-blank) !important;
+  color: var(--tt-ink) !important;
+}
+
+.el-input__wrapper {
+  box-shadow: 0 0 0 1px var(--tt-border) inset !important;
+}
+
+.el-input__inner,
+.el-textarea__inner {
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  outline: none !important;
+}
+
+.el-input__inner::placeholder,
+.el-textarea__inner::placeholder {
+  color: var(--tt-muted);
+}
+
+.el-select__selected-item,
+.el-select__placeholder,
+.el-input__inner::placeholder {
+  color: var(--tt-muted) !important;
+}
+
+.el-popper.is-light,
+.el-select__popper,
+.el-dropdown__popper,
+.el-picker__popper,
+.el-tooltip__popper {
+  background: var(--tt-surface) !important;
+  border-color: var(--tt-border) !important;
+  color: var(--tt-ink) !important;
+}
+
+.el-select-dropdown__item,
+.el-select-dropdown__item.is-disabled,
+.el-dropdown-menu__item,
+.el-picker-panel,
+.el-picker-panel__body,
+.el-date-table th,
+.el-date-table td {
+  color: var(--tt-ink) !important;
+}
+
+.el-pagination,
+.el-pagination .el-pagination__total,
+.el-pagination .btn-prev,
+.el-pagination .btn-next,
+.el-pagination .el-pager li {
+  color: var(--tt-ink) !important;
+}
+
+.el-table {
+  --el-table-header-bg-color: var(--tt-surface);
+  --el-table-tr-bg-color: var(--tt-surface);
+  --el-table-current-row-bg-color: rgba(209, 0, 123, 0.08);
+  --el-table-border-color: var(--tt-border);
+  --el-table-header-text-color: var(--tt-ink);
+  --el-table-text-color: var(--tt-ink);
+  --el-table-row-hover-bg-color: rgba(209, 0, 123, 0.06);
+}
+
+.el-table th,
+.el-table td,
+.el-table .cell {
+  background: var(--tt-surface) !important;
+  color: var(--tt-ink) !important;
+}
+
+.el-table tr,
+.el-table thead tr {
+  background: var(--tt-surface) !important;
+}
+
+.el-empty,
+.el-empty__description,
+.el-divider__text,
+.el-dialog__title,
+.el-form-item__label {
+  color: var(--tt-ink) !important;
+}
+
+.el-tag {
+  border-color: transparent;
+}
+
+html.dark-theme .el-tag {
+  font-weight: 700;
+  background-color: rgba(255, 255, 255, 0.04) !important;
+}
+
+html.dark-theme .el-tag--success {
+  background-color: rgba(103, 194, 58, 0.14) !important;
+  color: #7fe45a !important;
+  border-color: rgba(103, 194, 58, 0.26) !important;
+}
+
+html.dark-theme .el-tag--primary {
+  background-color: rgba(209, 0, 123, 0.14) !important;
+  color: #ff5fb2 !important;
+  border-color: rgba(209, 0, 123, 0.28) !important;
+}
+
+html.dark-theme .el-tag--warning {
+  background-color: rgba(230, 162, 60, 0.14) !important;
+  color: #f5c46a !important;
+  border-color: rgba(230, 162, 60, 0.28) !important;
+}
+
+html.dark-theme .el-tag--info {
+  background-color: rgba(144, 147, 153, 0.14) !important;
+  color: #c7cedb !important;
+  border-color: rgba(144, 147, 153, 0.24) !important;
+}
+
+html.dark-theme .el-tag--danger {
+  background-color: rgba(245, 108, 108, 0.14) !important;
+  color: #ff8d8d !important;
+  border-color: rgba(245, 108, 108, 0.28) !important;
+}
+
+.el-drawer,
+.el-dialog,
+.el-message-box,
+.el-notification {
+  background: var(--tt-surface) !important;
+  color: var(--tt-ink) !important;
+}
+
+.el-input__wrapper.is-focus {
+  box-shadow: 0 0 0 1px var(--tt-accent) inset !important;
+}
+
+.el-tabs__item.is-active,
+.el-menu-item.is-active {
+  color: var(--tt-accent) !important;
+}
+
+.el-tabs__active-bar {
+  background-color: var(--tt-accent) !important;
+}
+
+.el-card {
+  border-radius: 10px;
+  border-color: var(--tt-border);
+  background: var(--tt-surface);
+  box-shadow: 0 8px 24px rgba(7, 11, 20, 0.12);
+}
+
+.el-card__header {
+  background: linear-gradient(180deg, #ffffff 0%, #fbfbfe 100%);
+}
+
+.el-card__body {
+  background: var(--tt-surface);
+}
+
+html.dark-theme .el-card {
+  background: var(--tt-surface);
+  border-color: var(--tt-border);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28);
+}
+
+html.dark-theme .el-card__header {
+  background: linear-gradient(180deg, #151d30 0%, #12192a 100%);
+  border-bottom-color: var(--tt-border);
+}
+
+html.dark-theme .el-card__body {
+  background: var(--tt-surface);
+}
+
+html.dark-theme .el-menu,
+html.dark-theme .el-header,
+html.dark-theme .el-footer {
+  background: var(--tt-surface) !important;
+}
+
+html.dark-theme .el-input__wrapper,
+html.dark-theme .el-select__wrapper,
+html.dark-theme .el-textarea__inner,
+html.dark-theme .el-input__inner {
+  box-shadow: 0 0 0 1px var(--tt-border) inset !important;
+}
+
+html.dark-theme .el-input__wrapper.is-focus,
+html.dark-theme .el-select__wrapper.is-focused {
+  box-shadow: 0 0 0 1px var(--tt-accent) inset !important;
+  border-color: var(--tt-accent) !important;
+}
+
+html.dark-theme .el-input__wrapper:not(.is-focus),
+html.dark-theme .el-select__wrapper:not(.is-focused) {
+  border-color: var(--tt-border) !important;
+}
+
+html.dark-theme .el-table,
+html.dark-theme .el-table__inner-wrapper,
+html.dark-theme .el-table__body-wrapper,
+html.dark-theme .el-table__header-wrapper,
+html.dark-theme .el-table__footer-wrapper {
+  background: var(--tt-surface) !important;
+}
+
+html.dark-theme .el-pagination .el-pager li,
+html.dark-theme .el-pagination button,
+html.dark-theme .el-pagination .el-pagination__total {
+  background: var(--tt-surface) !important;
+  border-color: var(--tt-border) !important;
+}
+
+html.dark-theme .el-empty__description,
+html.dark-theme .el-dialog__title,
+html.dark-theme .el-form-item__label,
+html.dark-theme .el-divider__text {
+  color: var(--tt-ink) !important;
+}
+
+html.dark-theme .el-main,
+html.dark-theme .app-container,
+html.dark-theme .main-content {
+  background: var(--tt-surface-soft);
+}
+
+html.dark-theme a {
+  color: #ff60b0;
+}
+
+html.dark-theme .title,
+html.dark-theme .hero-content h1,
+html.dark-theme .hero-content p,
+html.dark-theme .feature-card p,
+html.dark-theme .navbar-menu a,
+html.dark-theme .logo-text,
+html.dark-theme .app-footer {
+  color: var(--tt-ink);
+}
+
+html.dark-theme .navbar-menu a {
+  text-decoration: none;
+}
+
+html.dark-theme a:hover {
+  color: #ff85c0;
+}
+
+.title {
+  color: var(--tt-ink);
+  letter-spacing: 0.1px;
+}
