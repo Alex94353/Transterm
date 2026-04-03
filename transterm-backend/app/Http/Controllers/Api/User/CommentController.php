@@ -16,7 +16,8 @@ class CommentController extends Controller
     {
         $query = Comment::query()
             ->with([
-                'term',
+                'term.translations',
+                'term.glossary.translations',
                 'user',
             ])
             ->where('user_id', $request->user()->id);

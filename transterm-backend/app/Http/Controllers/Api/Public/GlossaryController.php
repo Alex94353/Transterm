@@ -52,6 +52,19 @@ class GlossaryController extends Controller
             });
         }
 
+        $viewer = $request->user();
+        $query->where(function ($q) use ($viewer) {
+            $q->where(function ($publicQuery) {
+                $publicQuery
+                    ->where('approved', true)
+                    ->where('is_public', true);
+            });
+
+            if ($viewer) {
+                $q->orWhere('owner_id', $viewer->id);
+            }
+        });
+
         return new GlossaryCollection(
             $query->orderByDesc('id')
                 ->paginate($request->integer('per_page', 10))

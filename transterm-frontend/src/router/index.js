@@ -1,145 +1,104 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import { ElMessage } from 'element-plus'
-import { APP_TITLE } from '@/config/env'
-import { useAuthStore } from '@/stores/auth'
 
-const AppLayout = () => import('@/layouts/AppLayout.vue')
-const AuthLayout = () => import('@/layouts/AuthLayout.vue')
-const LoginView = () => import('@/views/auth/LoginView.vue')
-const RegisterView = () => import('@/views/auth/RegisterView.vue')
-const PublicEntityListView = () => import('@/views/public/PublicEntityListView.vue')
-const PublicEntityDetailView = () => import('@/views/public/PublicEntityDetailView.vue')
-const ProfileView = () => import('@/views/user/ProfileView.vue')
-const CommentsListView = () => import('@/views/shared/CommentsListView.vue')
-const AdminCrudEntityView = () => import('@/views/admin/AdminCrudEntityView.vue')
-const AdminUsersView = () => import('@/views/admin/AdminUsersView.vue')
+import { useAuthStore } from '../stores/auth'
+
+const HomePage = () => import('../pages/HomePage.vue')
+const LoginPage = () => import('../pages/LoginPage.vue')
+const RegisterPage = () => import('../pages/RegisterPage.vue')
+const GlossariesPage = () => import('../pages/GlossariesPage.vue')
+const GlossaryDetailPage = () => import('../pages/GlossaryDetailPage.vue')
+const TermDetailPage = () => import('../pages/TermDetailPage.vue')
+const UserCommentsPage = () => import('../pages/UserCommentsPage.vue')
+const UserProfilePage = () => import('../pages/UserProfilePage.vue')
+const AdminDashboard = () => import('../pages/AdminDashboard.vue')
+const AdminComments = () => import('../pages/Admin/AdminComments.vue')
+const AdminGlossaries = () => import('../pages/Admin/AdminGlossaries.vue')
+const AdminLanguages = () => import('../pages/Admin/AdminLanguages.vue')
+const AdminReferences = () => import('../pages/Admin/AdminReferences.vue')
+const AdminTerms = () => import('../pages/Admin/AdminTerms.vue')
+const AdminUsers = () => import('../pages/Admin/AdminUsers.vue')
+const NotFoundPage = () => import('../pages/NotFoundPage.vue')
 
 const routes = [
   {
+    path: '/',
+    component: HomePage,
+    meta: { title: 'Home' },
+  },
+  {
     path: '/login',
-    component: AuthLayout,
-    meta: { requiresGuest: true, title: 'Login' },
-    children: [
-      {
-        path: '',
-        component: LoginView,
-        meta: { requiresGuest: true, title: 'Login' },
-      },
-    ],
+    component: LoginPage,
+    meta: { title: 'Login', guestOnly: true },
   },
   {
     path: '/register',
-    component: AuthLayout,
-    meta: { requiresGuest: true, title: 'Register' },
-    children: [
-      {
-        path: '',
-        component: RegisterView,
-        meta: { requiresGuest: true, title: 'Register' },
-      },
-    ],
+    component: RegisterPage,
+    meta: { title: 'Register', guestOnly: true },
   },
   {
-    path: '/',
-    component: AppLayout,
-    children: [
-      {
-        path: '',
-        redirect: '/terms',
-      },
-      {
-        path: 'terms',
-        component: PublicEntityListView,
-        meta: { entityKey: 'terms', title: 'Terms' },
-      },
-      {
-        path: 'terms/:id',
-        component: PublicEntityDetailView,
-        meta: { entityKey: 'terms', title: 'Term details' },
-      },
-      {
-        path: 'glossaries',
-        component: PublicEntityListView,
-        meta: { entityKey: 'glossaries', title: 'Glossaries' },
-      },
-      {
-        path: 'glossaries/:id',
-        component: PublicEntityDetailView,
-        meta: { entityKey: 'glossaries', title: 'Glossary details' },
-      },
-      {
-        path: 'references',
-        component: PublicEntityListView,
-        meta: { entityKey: 'references', title: 'References' },
-      },
-      {
-        path: 'references/:id',
-        component: PublicEntityDetailView,
-        meta: { entityKey: 'references', title: 'Reference details' },
-      },
-      {
-        path: 'profile',
-        component: ProfileView,
-        meta: { requiresAuth: true, title: 'My profile' },
-      },
-      {
-        path: 'my-comments',
-        component: CommentsListView,
-        meta: { requiresAuth: true, title: 'My comments', commentScope: 'user' },
-      },
-      {
-        path: 'admin/comments',
-        component: CommentsListView,
-        meta: { requiresAuth: true, requiresAdmin: true, title: 'Admin comments', commentScope: 'admin' },
-      },
-      {
-        path: 'admin/users',
-        component: AdminUsersView,
-        meta: {
-          requiresAuth: true,
-          requiresAdmin: true,
-          permission: 'user.view',
-          title: 'Admin users',
-        },
-      },
-      {
-        path: 'admin/glossaries',
-        component: AdminCrudEntityView,
-        meta: {
-          requiresAuth: true,
-          requiresAdmin: true,
-          permission: 'glossary.view-any',
-          entityKey: 'glossaries',
-          title: 'Admin glossaries',
-        },
-      },
-      {
-        path: 'admin/terms',
-        component: AdminCrudEntityView,
-        meta: {
-          requiresAuth: true,
-          requiresAdmin: true,
-          permission: 'term.view-any',
-          entityKey: 'terms',
-          title: 'Admin terms',
-        },
-      },
-      {
-        path: 'admin/references',
-        component: AdminCrudEntityView,
-        meta: {
-          requiresAuth: true,
-          requiresAdmin: true,
-          permission: 'reference.view-any',
-          entityKey: 'references',
-          title: 'Admin references',
-        },
-      },
-    ],
+    path: '/glossaries',
+    component: GlossariesPage,
+    meta: { title: 'Glossaries' },
+  },
+  {
+    path: '/glossaries/:id',
+    component: GlossaryDetailPage,
+    meta: { title: 'Glossary Details' },
+  },
+  {
+    path: '/terms/:id',
+    component: TermDetailPage,
+    meta: { title: 'Term Details' },
+  },
+  {
+    path: '/my-comments',
+    component: UserCommentsPage,
+    meta: { title: 'My Comments', requiresAuth: true },
+  },
+  {
+    path: '/profile',
+    component: UserProfilePage,
+    meta: { title: 'Profile', requiresAuth: true },
+  },
+  {
+    path: '/admin',
+    component: AdminDashboard,
+    meta: { title: 'Admin Dashboard', requiresAdmin: true },
+  },
+  {
+    path: '/admin/glossaries',
+    component: AdminGlossaries,
+    meta: { title: 'Admin Glossaries', requiresAdmin: true },
+  },
+  {
+    path: '/admin/terms',
+    component: AdminTerms,
+    meta: { title: 'Admin Terms', requiresAdmin: true },
+  },
+  {
+    path: '/admin/users',
+    component: AdminUsers,
+    meta: { title: 'Admin Users', requiresAdmin: true },
+  },
+  {
+    path: '/admin/languages',
+    component: AdminLanguages,
+    meta: { title: 'Admin Languages', requiresAdmin: true },
+  },
+  {
+    path: '/admin/references',
+    component: AdminReferences,
+    meta: { title: 'Admin References', requiresAdmin: true },
+  },
+  {
+    path: '/admin/comments',
+    component: AdminComments,
+    meta: { title: 'Admin Comments', requiresAdmin: true },
   },
   {
     path: '/:pathMatch(.*)*',
-    redirect: '/terms',
+    component: NotFoundPage,
+    meta: { title: 'Not Found' },
   },
 ]
 
@@ -150,35 +109,39 @@ const router = createRouter({
 
 router.beforeEach(async (to) => {
   const authStore = useAuthStore()
-  await authStore.init()
 
-  if (to.meta?.requiresGuest && authStore.isAuthenticated) {
-    return '/terms'
-  }
-
-  if (to.meta?.requiresAuth && !authStore.isAuthenticated) {
-    return {
-      path: '/login',
-      query: { redirect: to.fullPath },
+  if (authStore.token && !authStore.user) {
+    try {
+      await authStore.getCurrentUser()
+    } catch {
+      // token is cleared in store on failure
     }
   }
 
-  if (to.meta?.requiresAdmin && !authStore.canAccessAdmin) {
-    ElMessage.warning('Admin access is required.')
-    return '/terms'
+  if (to.meta.requiresAdmin) {
+    if (!authStore.isAuthenticated) {
+      return { path: '/login', query: { redirect: to.fullPath } }
+    }
+    if (!authStore.isAdmin) {
+      return '/'
+    }
   }
 
-  if (to.meta?.permission && !authStore.hasPermission(to.meta.permission)) {
-    ElMessage.warning('Access denied by permission policy.')
-    return '/terms'
+  if (to.meta.requiresAuth && !authStore.isAuthenticated) {
+    return { path: '/login', query: { redirect: to.fullPath } }
+  }
+
+  if (to.meta.guestOnly && authStore.isAuthenticated) {
+    return '/'
   }
 
   return true
 })
 
 router.afterEach((to) => {
-  const title = to.meta?.title ? `${to.meta.title} | ${APP_TITLE}` : APP_TITLE
+  const title = to.meta?.title ? `${to.meta.title} - Transterm` : 'Transterm'
   document.title = title
 })
+
 
 export default router

@@ -35,9 +35,27 @@ class ProfileController extends Controller
             'surname' => ['nullable', 'string', 'max:255'],
             'language' => ['nullable', 'string', 'max:50'],
             'visible' => ['sometimes', 'boolean'],
+            'bio' => ['nullable', 'string'],
+            'about' => ['nullable', 'string'],
         ]);
 
-        $user->update($validated);
+        $userData = $validated;
+        unset($userData['bio'], $userData['about']);
+
+        if ($userData !== []) {
+            $user->update($userData);
+        }
+
+        if (array_key_exists('bio', $validated) || array_key_exists('about', $validated)) {
+            $about = array_key_exists('bio', $validated)
+                ? $validated['bio']
+                : $validated['about'];
+
+            $user->profile()->updateOrCreate(
+                ['user_id' => $user->id],
+                ['about' => $about]
+            );
+        }
 
         return response()->json([
             'message' => 'Profile updated successfully.',

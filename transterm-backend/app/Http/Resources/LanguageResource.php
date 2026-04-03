@@ -18,6 +18,7 @@ class LanguageResource extends JsonResource
             'id' => $this->id,
             'name' => $this->name,
             'code' => $this->code,
+            'flag_path' => $this->flag_path,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];

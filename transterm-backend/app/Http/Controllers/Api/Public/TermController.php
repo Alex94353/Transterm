@@ -75,6 +75,19 @@ class TermController extends Controller
             });
         }
 
+        $viewer = $request->user();
+        $query->where(function ($q) use ($viewer) {
+            $q->whereHas('glossary', function ($publicQuery) {
+                $publicQuery
+                    ->where('approved', true)
+                    ->where('is_public', true);
+            });
+
+            if ($viewer) {
+                $q->orWhere('created_by', $viewer->id);
+            }
+        });
+
         return new TermCollection(
             $query->orderByDesc('id')
                 ->paginate($request->integer('per_page', 10))
