@@ -20,11 +20,12 @@ class GlossaryController extends Controller
                 'terms',
             ])
             ->with([
-                'languagePair.sourceLanguage',
-                'languagePair.targetLanguage',
-                'field.fieldGroup',
-                'owner.profile',
-                'translations.language',
+                'languagePair:id,source_language_id,target_language_id',
+                'languagePair.sourceLanguage:id,name,code',
+                'languagePair.targetLanguage:id,name,code',
+                'field:id,name,code,field_group_id',
+                'field.fieldGroup:id,name,code',
+                'translations:id,glossary_id,language_id,title,description',
             ]);
 
         if ($request->filled('id')) {
@@ -126,12 +127,14 @@ class GlossaryController extends Controller
         $this->authorize('view', $glossary);
 
         $glossary->load([
-            'languagePair.sourceLanguage',
-            'languagePair.targetLanguage',
-            'field.fieldGroup',
-            'owner.profile',
-            'translations.language',
-            'terms.translations.language',
+            'languagePair:id,source_language_id,target_language_id',
+            'languagePair.sourceLanguage:id,name,code',
+            'languagePair.targetLanguage:id,name,code',
+            'field:id,name,code,field_group_id',
+            'field.fieldGroup:id,name,code',
+            'owner:id,name,surname,email',
+            'translations:id,glossary_id,language_id,title,description',
+            'translations.language:id,name,code',
         ])->loadCount([
             'terms',
         ]);
@@ -159,11 +162,14 @@ class GlossaryController extends Controller
         ]);
 
         $glossary->load([
-            'languagePair.sourceLanguage',
-            'languagePair.targetLanguage',
-            'field.fieldGroup',
-            'owner.profile',
-            'translations.language',
+            'languagePair:id,source_language_id,target_language_id',
+            'languagePair.sourceLanguage:id,name,code',
+            'languagePair.targetLanguage:id,name,code',
+            'field:id,name,code,field_group_id',
+            'field.fieldGroup:id,name,code',
+            'owner:id,name,surname,email',
+            'translations:id,glossary_id,language_id,title,description',
+            'translations.language:id,name,code',
         ])->loadCount([
             'terms',
         ]);
@@ -190,11 +196,14 @@ class GlossaryController extends Controller
         $glossary->update($validated);
 
         $glossary->load([
-            'languagePair.sourceLanguage',
-            'languagePair.targetLanguage',
-            'field.fieldGroup',
-            'owner.profile',
-            'translations.language',
+            'languagePair:id,source_language_id,target_language_id',
+            'languagePair.sourceLanguage:id,name,code',
+            'languagePair.targetLanguage:id,name,code',
+            'field:id,name,code,field_group_id',
+            'field.fieldGroup:id,name,code',
+            'owner:id,name,surname,email',
+            'translations:id,glossary_id,language_id,title,description',
+            'translations.language:id,name,code',
         ])->loadCount([
             'terms',
         ]);

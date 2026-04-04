@@ -15,19 +15,12 @@ class TermController extends Controller
         $this->authorize('viewAny', Term::class);
 
         $query = Term::query()
-            ->withCount([
-                'comments',
-                'translations',
-            ])
             ->with([
-                'glossary.translations.language',
-                'glossary.languagePair.sourceLanguage',
-                'glossary.languagePair.targetLanguage',
-                'field.fieldGroup',
-                'creator.profile',
-                'translations.language',
-                'translations.termReferences.reference',
-                'comments.user',
+                'glossary:id,language_pair_id,field_id,owner_id,approved,is_public,created_at,updated_at',
+                'glossary.translations:id,glossary_id,language_id,title,description',
+                'field:id,name,code,field_group_id',
+                'translations:id,term_id,language_id,title,definition,plural,context,synonym,notes',
+                'translations.language:id,name,code',
             ]);
 
         if ($request->filled('id')) {

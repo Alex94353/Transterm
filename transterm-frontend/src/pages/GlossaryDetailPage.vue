@@ -95,7 +95,7 @@
 </template>
 
 <script setup>
-import { onMounted, ref, computed } from 'vue'
+import { watch, ref, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useGlossaryStore } from '../stores/glossary'
 import MainLayout from '../components/Layout/MainLayout.vue'
@@ -115,9 +115,14 @@ const filteredTerms = computed(() => {
   })
 })
 
-onMounted(() => {
-  glossaryStore.fetchGlossary(route.params.id)
-})
+watch(
+  () => route.params.id,
+  (id) => {
+    searchTerm.value = ''
+    glossaryStore.fetchGlossary(id)
+  },
+  { immediate: true },
+)
 </script>
 
 <style scoped>

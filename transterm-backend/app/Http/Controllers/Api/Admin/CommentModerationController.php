@@ -14,8 +14,8 @@ class CommentModerationController extends Controller
     {
         $query = Comment::query()
             ->with([
-                'term',
-                'user',
+                'term:id,glossary_id,field_id,created_by',
+                'user:id,username,email,name,surname',
             ]);
 
         if ($request->filled('user_id')) {

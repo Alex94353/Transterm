@@ -17,7 +17,7 @@ class ReferenceController extends Controller
 
         $query = Reference::query()
             ->with([
-                'user.country',
+                'user:id,username,email,name,surname',
             ]);
 
         if ($request->filled('id')) {

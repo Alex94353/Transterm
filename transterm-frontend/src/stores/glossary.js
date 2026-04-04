@@ -64,6 +64,7 @@ export const useGlossaryStore = defineStore('glossary', () => {
     page: 1,
     per_page: 20,
   })
+  let latestGlossaryRequestId = 0
 
   const totalGlossaries = computed(() => glossaries.value.length)
 
@@ -87,16 +88,23 @@ export const useGlossaryStore = defineStore('glossary', () => {
   }
 
   async function fetchGlossary(id) {
+    const requestId = ++latestGlossaryRequestId
     loading.value = true
     error.value = null
-    try {
-      const response = await glossaryService.getGlossary(id)
-      const glossaryData = normalizeGlossary(response.data.data || response.data)
+    currentGlossary.value = null
 
-      const termsResponse = await glossaryService.getTerms({
-        glossary_id: id,
-        per_page: 100,
-      })
+    try {
+      const [response, termsResponse] = await Promise.all([
+        glossaryService.getGlossary(id),
+        glossaryService.getTerms({
+          glossary_id: id,
+          per_page: 100,
+        }),
+      ])
+
+      if (requestId !== latestGlossaryRequestId) return null
+
+      const glossaryData = normalizeGlossary(response.data.data || response.data)
 
       const termsData = termsResponse.data.data || termsResponse.data || []
       const normalizedTerms = Array.isArray(termsData) ? termsData.map(normalizeTerm) : []
@@ -108,10 +116,13 @@ export const useGlossaryStore = defineStore('glossary', () => {
 
       return response.data
     } catch (err) {
+      if (requestId !== latestGlossaryRequestId) return null
       error.value = err.response?.data?.message || 'Failed to fetch glossary'
       throw err
     } finally {
-      loading.value = false
+      if (requestId === latestGlossaryRequestId) {
+        loading.value = false
+      }
     }
   }
 

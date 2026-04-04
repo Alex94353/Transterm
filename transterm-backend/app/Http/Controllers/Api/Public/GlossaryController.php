@@ -17,11 +17,11 @@ class GlossaryController extends Controller
         $query = Glossary::query()
             ->withCount('terms')
             ->with([
-                'owner',
-                'field',
-                'translations.language',
-                'languagePair.sourceLanguage',
-                'languagePair.targetLanguage',
+                'field:id,name,code,field_group_id',
+                'translations:id,glossary_id,language_id,title,description',
+                'languagePair:id,source_language_id,target_language_id',
+                'languagePair.sourceLanguage:id,name,code',
+                'languagePair.targetLanguage:id,name,code',
             ]);
 
         if ($request->filled('field_id')) {
@@ -77,12 +77,14 @@ class GlossaryController extends Controller
         $this->authorize('view', $glossary);
 
         $glossary->load([
-            'owner.profile',
-            'field.fieldGroup',
-            'translations.language',
-            'languagePair.sourceLanguage',
-            'languagePair.targetLanguage',
-            'terms.translations.language',
+            'owner:id,name,surname,email',
+            'field:id,name,code,field_group_id',
+            'field.fieldGroup:id,name,code',
+            'translations:id,glossary_id,language_id,title,description',
+            'translations.language:id,name,code',
+            'languagePair:id,source_language_id,target_language_id',
+            'languagePair.sourceLanguage:id,name,code',
+            'languagePair.targetLanguage:id,name,code',
         ]);
 
         return new GlossaryResource($glossary);

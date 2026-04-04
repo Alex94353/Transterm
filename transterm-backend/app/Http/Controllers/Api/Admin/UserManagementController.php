@@ -13,9 +13,7 @@ class UserManagementController extends Controller
     {
         $query = User::query()
             ->with([
-                'roles.permissions',
-                'profile',
-                'country',
+                'roles:id,name',
             ]);
 
         if ($request->filled('id')) {
@@ -99,7 +97,7 @@ class UserManagementController extends Controller
     public function show(User $user): JsonResponse
     {
         $user->load([
-            'roles.permissions',
+            'roles:id,name',
             'profile',
             'country',
         ]);
@@ -133,7 +131,7 @@ class UserManagementController extends Controller
         }
 
         $user->load([
-            'roles.permissions',
+            'roles:id,name',
             'profile',
             'country',
         ]);
@@ -158,7 +156,7 @@ class UserManagementController extends Controller
         return response()->json([
             'message' => 'User banned successfully.',
             'user' => $user->fresh([
-                'roles.permissions',
+                'roles:id,name',
                 'profile',
                 'country',
             ]),
@@ -175,7 +173,7 @@ class UserManagementController extends Controller
         return response()->json([
             'message' => 'User unbanned successfully.',
             'user' => $user->fresh([
-                'roles.permissions',
+                'roles:id,name',
                 'profile',
                 'country',
             ]),
