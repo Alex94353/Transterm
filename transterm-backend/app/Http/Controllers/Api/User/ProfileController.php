@@ -11,7 +11,8 @@ class ProfileController extends Controller
     public function show(Request $request): JsonResponse
     {
         $user = $request->user()->load([
-            'profile.country',
+            'profile',
+            'country',
             'roles.permissions',
         ]);
 
@@ -60,7 +61,8 @@ class ProfileController extends Controller
         return response()->json([
             'message' => 'Profile updated successfully.',
             'user' => $user->fresh()->load([
-                'profile.country',
+                'profile',
+                'country',
                 'roles.permissions',
             ]),
         ]);

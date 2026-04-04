@@ -6,11 +6,14 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\TermCollection;
 use App\Http\Resources\TermResource;
 use App\Models\Term;
+use App\Support\ApiListCache;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class TermController extends Controller
 {
-    public function index(Request $request): TermCollection
+    public function index(Request $request): JsonResponse
     {
         $this->authorize('viewAny', Term::class);
 
@@ -81,11 +84,27 @@ class TermController extends Controller
             }
         });
 
-        return new TermCollection(
-            $query->orderByDesc('id')
-                ->paginate($request->integer('per_page', 10))
-                ->withQueryString()
+        $buildPayload = function () use ($query, $request) {
+            $collection = new TermCollection(
+                $query->orderByDesc('id')
+                    ->paginate($this->resolvePerPage($request))
+                    ->withQueryString()
+            );
+
+            return $collection->response()->getData(true);
+        };
+
+        if (! ApiListCache::enabled()) {
+            return response()->json($buildPayload());
+        }
+
+        $payload = Cache::remember(
+            ApiListCache::termsKey($request),
+            now()->addSeconds(ApiListCache::ttlSeconds()),
+            $buildPayload
         );
+
+        return response()->json($payload);
     }
 
     public function show(Term $term): TermResource
@@ -107,5 +126,12 @@ class TermController extends Controller
         ]);
 
         return new TermResource($term);
+    }
+
+    private function resolvePerPage(Request $request): int
+    {
+        $perPage = $request->integer('per_page', 20);
+
+        return min(max($perPage, 5), 30);
     }
 }

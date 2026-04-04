@@ -91,7 +91,8 @@ class AuthController extends Controller
     public function me(Request $request): JsonResponse
     {
         $user = $request->user()->load([
-            'profile.country',
+            'profile',
+            'country',
             'roles.permissions',
         ]);
 

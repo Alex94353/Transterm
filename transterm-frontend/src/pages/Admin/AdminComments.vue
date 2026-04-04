@@ -97,6 +97,7 @@ import AdminSearchBar from '../../components/Admin/AdminSearchBar.vue'
 import AdminTableActions from '../../components/Admin/AdminTableActions.vue'
 import AdminToolbar from '../../components/Admin/AdminToolbar.vue'
 import { useAdminList } from '../../composables/useAdminList'
+import { isRequestCanceled } from '../../services/api'
 import adminService from '../../services/adminService'
 
 const comments = ref([])
@@ -119,14 +120,14 @@ const {
   runPageChange,
   runPageSizeChange,
 } = useAdminList()
+let latestCommentsRequestId = 0
 
 onMounted(() => {
   fetchComments()
 })
 
-bindDebouncedSearch(fetchComments)
-
 const fetchComments = async () => {
+  const requestId = ++latestCommentsRequestId
   isLoading.value = true
   try {
     const params = {
@@ -145,18 +146,26 @@ const fetchComments = async () => {
       params.search = appliedSearch.value.trim()
     }
 
-    const response = await adminService.getComments(params)
+    const response = await adminService.getComments(params, {
+      cancelKey: 'admin:comments:list',
+    })
+    if (requestId !== latestCommentsRequestId) return
     const payload = response.data || {}
     comments.value = payload.data || []
     pagination.total = payload?.meta?.total ?? payload.total ?? comments.value.length
     pagination.page = payload?.meta?.current_page ?? pagination.page
     pagination.perPage = payload?.meta?.per_page ?? pagination.perPage
-  } catch {
+  } catch (err) {
+    if (requestId !== latestCommentsRequestId || isRequestCanceled(err)) return
     ElMessage.error('Failed to load comments')
   } finally {
-    isLoading.value = false
+    if (requestId === latestCommentsRequestId) {
+      isLoading.value = false
+    }
   }
 }
+
+bindDebouncedSearch(fetchComments)
 
 const handleMarkSpam = async (commentId) => {
   try {

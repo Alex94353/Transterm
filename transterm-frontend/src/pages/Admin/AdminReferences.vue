@@ -103,6 +103,7 @@ import AdminSearchBar from '../../components/Admin/AdminSearchBar.vue'
 import AdminTableActions from '../../components/Admin/AdminTableActions.vue'
 import AdminToolbar from '../../components/Admin/AdminToolbar.vue'
 import { useAdminList } from '../../composables/useAdminList'
+import { isRequestCanceled } from '../../services/api'
 import adminService from '../../services/adminService'
 
 const references = ref([])
@@ -122,6 +123,7 @@ const {
   runPageChange,
   runPageSizeChange,
 } = useAdminList()
+let latestReferencesRequestId = 0
 
 const filters = reactive({
   type: '',
@@ -148,9 +150,8 @@ onMounted(() => {
   fetchReferences()
 })
 
-bindDebouncedSearch(fetchReferences)
-
 const fetchReferences = async () => {
+  const requestId = ++latestReferencesRequestId
   isLoading.value = true
   try {
     const params = {
@@ -171,7 +172,10 @@ const fetchReferences = async () => {
       params.language = filters.language.trim()
     }
 
-    const response = await adminService.getReferences(params)
+    const response = await adminService.getReferences(params, {
+      cancelKey: 'admin:references:list',
+    })
+    if (requestId !== latestReferencesRequestId) return
     const payload = response.data || {}
     const rows = payload.data || []
 
@@ -183,12 +187,17 @@ const fetchReferences = async () => {
     // Keep dropdown options practical based on currently visible dataset.
     typeOptions.value = Array.from(new Set(rows.map((item) => item.type).filter(Boolean)))
     languageOptions.value = Array.from(new Set(rows.map((item) => item.language).filter(Boolean)))
-  } catch {
+  } catch (err) {
+    if (requestId !== latestReferencesRequestId || isRequestCanceled(err)) return
     ElMessage.error('Failed to load references')
   } finally {
-    isLoading.value = false
+    if (requestId === latestReferencesRequestId) {
+      isLoading.value = false
+    }
   }
 }
+
+bindDebouncedSearch(fetchReferences)
 
 const handleCreate = () => {
   isEditMode.value = false

@@ -6,11 +6,14 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\GlossaryCollection;
 use App\Http\Resources\GlossaryResource;
 use App\Models\Glossary;
+use App\Support\ApiListCache;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class GlossaryController extends Controller
 {
-    public function index(Request $request): GlossaryCollection
+    public function index(Request $request): JsonResponse
     {
         $this->authorize('viewAny', Glossary::class);
 
@@ -65,11 +68,27 @@ class GlossaryController extends Controller
             }
         });
 
-        return new GlossaryCollection(
-            $query->orderByDesc('id')
-                ->paginate($request->integer('per_page', 10))
-                ->withQueryString()
+        $buildPayload = function () use ($query, $request) {
+            $collection = new GlossaryCollection(
+                $query->orderByDesc('id')
+                    ->paginate($this->resolvePerPage($request))
+                    ->withQueryString()
+            );
+
+            return $collection->response()->getData(true);
+        };
+
+        if (! ApiListCache::enabled()) {
+            return response()->json($buildPayload());
+        }
+
+        $payload = Cache::remember(
+            ApiListCache::glossariesKey($request),
+            now()->addSeconds(ApiListCache::ttlSeconds()),
+            $buildPayload
         );
+
+        return response()->json($payload);
     }
 
     public function show(Glossary $glossary): GlossaryResource
@@ -88,5 +107,12 @@ class GlossaryController extends Controller
         ]);
 
         return new GlossaryResource($glossary);
+    }
+
+    private function resolvePerPage(Request $request): int
+    {
+        $perPage = $request->integer('per_page', 20);
+
+        return min(max($perPage, 5), 30);
     }
 }

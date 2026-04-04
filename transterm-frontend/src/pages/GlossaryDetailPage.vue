@@ -84,6 +84,17 @@
           </template>
         </el-table-column>
       </el-table>
+
+      <div v-if="glossaryStore.hasMoreGlossaryTerms" class="load-more-wrap">
+        <el-button
+          type="primary"
+          plain
+          :loading="glossaryStore.loadingMoreGlossaryTerms"
+          @click="handleLoadMore"
+        >
+          Load more terms
+        </el-button>
+      </div>
     </el-card>
 
     <el-skeleton
@@ -123,6 +134,14 @@ watch(
   },
   { immediate: true },
 )
+
+const handleLoadMore = async () => {
+  try {
+    await glossaryStore.loadMoreGlossaryTerms()
+  } catch {
+    // error is already handled in the store
+  }
+}
 </script>
 
 <style scoped>
@@ -163,5 +182,11 @@ watch(
   align-items: center;
   justify-content: space-between;
   margin-bottom: 10px;
+}
+
+.load-more-wrap {
+  margin-top: 16px;
+  display: flex;
+  justify-content: center;
 }
 </style>

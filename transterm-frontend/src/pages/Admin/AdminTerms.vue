@@ -126,6 +126,7 @@ import AdminSearchBar from '../../components/Admin/AdminSearchBar.vue'
 import AdminTableActions from '../../components/Admin/AdminTableActions.vue'
 import AdminToolbar from '../../components/Admin/AdminToolbar.vue'
 import { useAdminList } from '../../composables/useAdminList'
+import { isRequestCanceled } from '../../services/api'
 import adminService from '../../services/adminService'
 
 const terms = ref([])
@@ -159,6 +160,7 @@ const {
   runPageChange,
   runPageSizeChange,
 } = useAdminList()
+let latestTermsRequestId = 0
 
 const filters = reactive({
   glossaryId: null,
@@ -179,9 +181,8 @@ onMounted(() => {
   fetchFields()
 })
 
-bindDebouncedSearch(fetchTerms)
-
 const fetchTerms = async () => {
+  const requestId = ++latestTermsRequestId
   isLoading.value = true
   try {
     const params = {
@@ -202,33 +203,49 @@ const fetchTerms = async () => {
       params.field_id = filters.fieldId
     }
 
-    const response = await adminService.adminGetTerms(params)
+    const response = await adminService.adminGetTerms(params, {
+      cancelKey: 'admin:terms:list',
+    })
+    if (requestId !== latestTermsRequestId) return
     const payload = response.data || {}
     terms.value = payload.data || []
     pagination.total = payload?.meta?.total ?? payload.total ?? terms.value.length
     pagination.page = payload?.meta?.current_page ?? pagination.page
     pagination.perPage = payload?.meta?.per_page ?? pagination.perPage
-  } catch {
+  } catch (err) {
+    if (requestId !== latestTermsRequestId || isRequestCanceled(err)) return
     ElMessage.error('Failed to load terms')
   } finally {
-    isLoading.value = false
+    if (requestId === latestTermsRequestId) {
+      isLoading.value = false
+    }
   }
 }
 
+bindDebouncedSearch(fetchTerms)
+
 const fetchGlossaries = async () => {
   try {
-    const response = await adminService.adminGetGlossaries({ per_page: 100 })
+    const response = await adminService.adminGetGlossaries(
+      { per_page: 100 },
+      { cancelKey: 'admin:terms:glossaries:lookup' },
+    )
     glossaries.value = response.data.data || response.data || []
-  } catch {
+  } catch (err) {
+    if (isRequestCanceled(err)) return
     glossaries.value = []
   }
 }
 
 const fetchFields = async () => {
   try {
-    const response = await adminService.getFields({ per_page: 100 })
+    const response = await adminService.getFields(
+      { per_page: 100 },
+      { cancelKey: 'admin:terms:fields:lookup' },
+    )
     fields.value = response.data.data || response.data || []
-  } catch {
+  } catch (err) {
+    if (isRequestCanceled(err)) return
     fields.value = []
   }
 }

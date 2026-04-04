@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\TermCollection;
 use App\Http\Resources\TermResource;
 use App\Models\Term;
+use App\Support\ApiListCache;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -182,6 +183,8 @@ class TermController extends Controller
             'translations',
         ]);
 
+        ApiListCache::bumpGlossaryAndTermVersions();
+
         return (new TermResource($term))
             ->additional([
                 'message' => 'Term created successfully.',
@@ -215,6 +218,8 @@ class TermController extends Controller
             'translations',
         ]);
 
+        ApiListCache::bumpGlossaryAndTermVersions();
+
         return (new TermResource($term))
             ->additional([
                 'message' => 'Term updated successfully.',
@@ -227,6 +232,7 @@ class TermController extends Controller
         $this->authorize('delete', $term);
 
         $term->delete();
+        ApiListCache::bumpGlossaryAndTermVersions();
 
         return response()->json([
             'message' => 'Term deleted successfully.',

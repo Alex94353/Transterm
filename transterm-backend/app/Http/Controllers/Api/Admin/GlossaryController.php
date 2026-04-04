@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\GlossaryCollection;
 use App\Http\Resources\GlossaryResource;
 use App\Models\Glossary;
+use App\Support\ApiListCache;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -174,6 +175,8 @@ class GlossaryController extends Controller
             'terms',
         ]);
 
+        ApiListCache::bumpGlossaryAndTermVersions();
+
         return (new GlossaryResource($glossary))
             ->additional([
                 'message' => 'Glossary created successfully.',
@@ -208,6 +211,8 @@ class GlossaryController extends Controller
             'terms',
         ]);
 
+        ApiListCache::bumpGlossaryAndTermVersions();
+
         return (new GlossaryResource($glossary))
             ->additional([
                 'message' => 'Glossary updated successfully.',
@@ -220,6 +225,7 @@ class GlossaryController extends Controller
         $this->authorize('delete', $glossary);
 
         $glossary->delete();
+        ApiListCache::bumpGlossaryAndTermVersions();
 
         return response()->json([
             'message' => 'Glossary deleted successfully.',

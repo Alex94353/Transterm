@@ -102,7 +102,7 @@
 </template>
 
 <script setup>
-import { onMounted, ref, reactive } from 'vue'
+import { ref, reactive, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { useGlossaryStore } from '../stores/glossary'
@@ -118,9 +118,14 @@ const commentForm = reactive({
   content: '',
 })
 
-onMounted(() => {
-  glossaryStore.fetchTerm(route.params.id)
-})
+watch(
+  () => route.params.id,
+  (id) => {
+    commentForm.content = ''
+    glossaryStore.fetchTerm(id)
+  },
+  { immediate: true },
+)
 
 const handleAddComment = async () => {
   if (!commentForm.content.trim()) {

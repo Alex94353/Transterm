@@ -9,6 +9,7 @@
             placeholder="Search glossaries..."
             style="width: 300px"
             @input="handleSearch"
+            @clear="handleSearch"
             clearable
           />
         </div>
@@ -68,20 +69,36 @@
 </template>
 
 <script setup>
-import { onMounted } from 'vue'
+import { onBeforeUnmount, onMounted } from 'vue'
 import { useGlossaryStore } from '../stores/glossary'
 import MainLayout from '../components/Layout/MainLayout.vue'
 import { Connection, Loading } from '@element-plus/icons-vue'
 
 const glossaryStore = useGlossaryStore()
+const SEARCH_DEBOUNCE_MS = 350
+let searchDebounceTimer = null
 
 onMounted(() => {
   glossaryStore.fetchGlossaries()
 })
 
 const handleSearch = () => {
-  glossaryStore.fetchGlossaries()
+  if (searchDebounceTimer) {
+    clearTimeout(searchDebounceTimer)
+  }
+
+  searchDebounceTimer = setTimeout(() => {
+    glossaryStore.setFilters({ page: 1 })
+    glossaryStore.fetchGlossaries()
+  }, SEARCH_DEBOUNCE_MS)
 }
+
+onBeforeUnmount(() => {
+  if (searchDebounceTimer) {
+    clearTimeout(searchDebounceTimer)
+    searchDebounceTimer = null
+  }
+})
 
 const termCount = (glossary) => {
   return Number(glossary?.terms_count ?? 0)

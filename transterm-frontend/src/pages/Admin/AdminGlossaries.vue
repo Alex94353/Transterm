@@ -172,6 +172,7 @@ import AdminSearchBar from '../../components/Admin/AdminSearchBar.vue'
 import AdminTableActions from '../../components/Admin/AdminTableActions.vue'
 import AdminToolbar from '../../components/Admin/AdminToolbar.vue'
 import { useAdminList } from '../../composables/useAdminList'
+import { isRequestCanceled } from '../../services/api'
 import adminService from '../../services/adminService'
 
 const glossaries = ref([])
@@ -203,6 +204,7 @@ const {
   runPageChange,
   runPageSizeChange,
 } = useAdminList()
+let latestGlossariesRequestId = 0
 
 const filters = reactive({
   languagePairId: null,
@@ -227,9 +229,8 @@ onMounted(() => {
   fetchFields()
 })
 
-bindDebouncedSearch(fetchGlossaries)
-
 const fetchGlossaries = async () => {
+  const requestId = ++latestGlossariesRequestId
   isLoading.value = true
   try {
     const params = {
@@ -262,33 +263,49 @@ const fetchGlossaries = async () => {
       params.is_public = false
     }
 
-    const response = await adminService.adminGetGlossaries(params)
+    const response = await adminService.adminGetGlossaries(params, {
+      cancelKey: 'admin:glossaries:list',
+    })
+    if (requestId !== latestGlossariesRequestId) return
     const payload = response.data || {}
     glossaries.value = payload.data || []
     pagination.total = payload?.meta?.total ?? payload.total ?? glossaries.value.length
     pagination.page = payload?.meta?.current_page ?? pagination.page
     pagination.perPage = payload?.meta?.per_page ?? pagination.perPage
-  } catch {
+  } catch (err) {
+    if (requestId !== latestGlossariesRequestId || isRequestCanceled(err)) return
     ElMessage.error('Failed to load glossaries')
   } finally {
-    isLoading.value = false
+    if (requestId === latestGlossariesRequestId) {
+      isLoading.value = false
+    }
   }
 }
 
+bindDebouncedSearch(fetchGlossaries)
+
 const fetchLanguagePairs = async () => {
   try {
-    const response = await adminService.getLanguagePairs({ per_page: 100 })
+    const response = await adminService.getLanguagePairs(
+      { per_page: 100 },
+      { cancelKey: 'admin:glossaries:language-pairs:lookup' },
+    )
     languagePairs.value = response.data.data || response.data || []
-  } catch {
+  } catch (err) {
+    if (isRequestCanceled(err)) return
     ElMessage.error('Failed to load language pairs')
   }
 }
 
 const fetchFields = async () => {
   try {
-    const response = await adminService.getFields({ per_page: 100 })
+    const response = await adminService.getFields(
+      { per_page: 100 },
+      { cancelKey: 'admin:glossaries:fields:lookup' },
+    )
     fields.value = response.data.data || response.data || []
-  } catch {
+  } catch (err) {
+    if (isRequestCanceled(err)) return
     fields.value = []
   }
 }

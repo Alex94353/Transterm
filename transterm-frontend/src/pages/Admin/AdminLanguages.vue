@@ -191,6 +191,7 @@ import AdminPagination from '../../components/Admin/AdminPagination.vue'
 import AdminSearchBar from '../../components/Admin/AdminSearchBar.vue'
 import AdminTableActions from '../../components/Admin/AdminTableActions.vue'
 import AdminToolbar from '../../components/Admin/AdminToolbar.vue'
+import { isRequestCanceled } from '../../services/api'
 import adminService from '../../services/adminService'
 
 const activeTab = ref('languages')
@@ -210,6 +211,8 @@ const languageFilters = reactive({
 })
 const SEARCH_DEBOUNCE_MS = 350
 let languageSearchDebounceTimer
+let latestLanguagesRequestId = 0
+let latestPairsRequestId = 0
 
 const pairFilters = reactive({
   sourceLanguageId: null,
@@ -270,6 +273,7 @@ watch(() => languageFilters.search, (newValue, oldValue) => {
 })
 
 const fetchLanguages = async () => {
+  const requestId = ++latestLanguagesRequestId
   isLanguagesLoading.value = true
   try {
     const params = {
@@ -286,22 +290,31 @@ const fetchLanguages = async () => {
       params.code = languageFilters.code.trim()
     }
 
-    const response = await adminService.getLanguages(params)
+    const response = await adminService.getLanguages(params, {
+      cancelKey: 'admin:languages:list',
+    })
+    if (requestId !== latestLanguagesRequestId) return
     const payload = response.data || {}
     languages.value = payload.data || []
     languagePagination.total = payload?.meta?.total ?? payload.total ?? languages.value.length
     languagePagination.page = payload?.meta?.current_page ?? languagePagination.page
     languagePagination.perPage = payload?.meta?.per_page ?? languagePagination.perPage
-  } catch {
+  } catch (err) {
+    if (requestId !== latestLanguagesRequestId || isRequestCanceled(err)) return
     ElMessage.error('Failed to load languages')
   } finally {
-    isLanguagesLoading.value = false
+    if (requestId === latestLanguagesRequestId) {
+      isLanguagesLoading.value = false
+    }
   }
 }
 
 const fetchLanguageOptions = async () => {
   try {
-    const response = await adminService.getLanguages({ per_page: 200 })
+    const response = await adminService.getLanguages(
+      { per_page: 200 },
+      { cancelKey: 'admin:languages:lookup' },
+    )
     languageOptions.value = (response.data?.data || []).map((language) => ({
       ...language,
       label: `${language.name} (${language.code})`,
@@ -310,13 +323,15 @@ const fetchLanguageOptions = async () => {
       label: language.label,
       value: language.id,
     }))
-  } catch {
+  } catch (err) {
+    if (isRequestCanceled(err)) return
     languageOptions.value = []
     languageSelectOptions.value = []
   }
 }
 
 const fetchLanguagePairs = async () => {
+  const requestId = ++latestPairsRequestId
   isPairsLoading.value = true
   try {
     const params = {
@@ -333,16 +348,22 @@ const fetchLanguagePairs = async () => {
       params.target_language_id = pairFilters.targetLanguageId
     }
 
-    const response = await adminService.getLanguagePairs(params)
+    const response = await adminService.getLanguagePairs(params, {
+      cancelKey: 'admin:language-pairs:list',
+    })
+    if (requestId !== latestPairsRequestId) return
     const payload = response.data || {}
     languagePairs.value = payload.data || []
     pairPagination.total = payload?.meta?.total ?? payload.total ?? languagePairs.value.length
     pairPagination.page = payload?.meta?.current_page ?? pairPagination.page
     pairPagination.perPage = payload?.meta?.per_page ?? pairPagination.perPage
-  } catch {
+  } catch (err) {
+    if (requestId !== latestPairsRequestId || isRequestCanceled(err)) return
     ElMessage.error('Failed to load language pairs')
   } finally {
-    isPairsLoading.value = false
+    if (requestId === latestPairsRequestId) {
+      isPairsLoading.value = false
+    }
   }
 }
 

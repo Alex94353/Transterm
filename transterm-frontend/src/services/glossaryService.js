@@ -2,12 +2,12 @@ import api from './api'
 
 export const glossaryService = {
   // Public endpoints
-  getGlossaries: (params) => api.get('/glossaries', { params }),
-  getGlossary: (id) => api.get(`/glossaries/${id}`),
+  getGlossaries: (params, requestConfig = {}) => api.get('/glossaries', { params, ...requestConfig }),
+  getGlossary: (id, requestConfig = {}) => api.get(`/glossaries/${id}`, requestConfig),
 
   // Terms
-  getTerms: (params) => api.get('/terms', { params }),
-  getTerm: (id) => api.get(`/terms/${id}`),
+  getTerms: (params, requestConfig = {}) => api.get('/terms', { params, ...requestConfig }),
+  getTerm: (id, requestConfig = {}) => api.get(`/terms/${id}`, requestConfig),
 
   // Comments
   addComment: (termId, data) => api.post(`/terms/${termId}/comments`, data),

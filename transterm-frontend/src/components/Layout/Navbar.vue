@@ -35,7 +35,7 @@
             <el-menu-item index="/profile">
               <router-link to="/profile">Profile</router-link>
             </el-menu-item>
-            <el-menu-item @click="handleLogout">Logout</el-menu-item>
+            <el-menu-item index="/logout" @click="handleLogout">Logout</el-menu-item>
           </el-sub-menu>
 
           <el-menu-item v-else index="/login">

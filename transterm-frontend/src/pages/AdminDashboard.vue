@@ -111,6 +111,7 @@ import { onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import AdminPageShell from '../components/Admin/AdminPageShell.vue'
 import adminService from '../services/adminService'
+import { isRequestCanceled } from '../services/api'
 import {
   DocumentCopy,
   Menu as MenuIcon,
@@ -126,6 +127,7 @@ const stats = ref({
   terms: 0,
   comments: 0,
 })
+let latestStatsRequestId = 0
 
 const extractTotal = (response) => {
   const payload = response?.data
@@ -140,13 +142,16 @@ const extractTotal = (response) => {
 }
 
 const fetchStats = async () => {
+  const requestId = ++latestStatsRequestId
   try {
     const [usersRes, glossariesRes, termsRes, commentsRes] = await Promise.all([
-      adminService.getUsers({ per_page: 1 }),
-      adminService.adminGetGlossaries({ per_page: 1 }),
-      adminService.adminGetTerms({ per_page: 1 }),
-      adminService.getComments({ per_page: 1 }),
+      adminService.getUsers({ per_page: 1 }, { cancelKey: 'admin:dashboard:users' }),
+      adminService.adminGetGlossaries({ per_page: 1 }, { cancelKey: 'admin:dashboard:glossaries' }),
+      adminService.adminGetTerms({ per_page: 1 }, { cancelKey: 'admin:dashboard:terms' }),
+      adminService.getComments({ per_page: 1 }, { cancelKey: 'admin:dashboard:comments' }),
     ])
+
+    if (requestId !== latestStatsRequestId) return
 
     stats.value = {
       users: extractTotal(usersRes),
@@ -154,7 +159,8 @@ const fetchStats = async () => {
       terms: extractTotal(termsRes),
       comments: extractTotal(commentsRes),
     }
-  } catch {
+  } catch (err) {
+    if (requestId !== latestStatsRequestId || isRequestCanceled(err)) return
     ElMessage.error('Failed to load dashboard statistics')
   }
 }

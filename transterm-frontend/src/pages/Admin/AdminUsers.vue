@@ -159,6 +159,7 @@ import AdminSearchBar from '../../components/Admin/AdminSearchBar.vue'
 import AdminTableActions from '../../components/Admin/AdminTableActions.vue'
 import AdminToolbar from '../../components/Admin/AdminToolbar.vue'
 import { useAdminList } from '../../composables/useAdminList'
+import { isRequestCanceled } from '../../services/api'
 import adminService from '../../services/adminService'
 
 const users = ref([])
@@ -189,6 +190,7 @@ const {
   runPageChange,
   runPageSizeChange,
 } = useAdminList()
+let latestUsersRequestId = 0
 
 const filters = reactive({
   activated: 'all',
@@ -209,23 +211,26 @@ onMounted(() => {
   fetchUsers()
 })
 
-bindDebouncedSearch(fetchUsers)
-
 const fetchRoles = async () => {
   try {
-    const response = await adminService.getRoles({ per_page: 100 })
+    const response = await adminService.getRoles(
+      { per_page: 100 },
+      { cancelKey: 'admin:users:roles:lookup' },
+    )
     roleOptions.value = response.data?.data || []
     roleDialogOptions.value = roleOptions.value.map((role) => ({
       label: role.name,
       value: role.id,
     }))
-  } catch {
+  } catch (err) {
+    if (isRequestCanceled(err)) return
     roleOptions.value = []
     roleDialogOptions.value = []
   }
 }
 
 const fetchUsers = async () => {
+  const requestId = ++latestUsersRequestId
   isLoading.value = true
   try {
     const params = {
@@ -254,18 +259,26 @@ const fetchUsers = async () => {
       params.role_id = filters.roleId
     }
 
-    const response = await adminService.getUsers(params)
+    const response = await adminService.getUsers(params, {
+      cancelKey: 'admin:users:list',
+    })
+    if (requestId !== latestUsersRequestId) return
     const payload = response.data || {}
     users.value = payload.data || []
     pagination.total = payload?.meta?.total ?? payload.total ?? users.value.length
     pagination.page = payload?.meta?.current_page ?? pagination.page
     pagination.perPage = payload?.meta?.per_page ?? pagination.perPage
-  } catch {
+  } catch (err) {
+    if (requestId !== latestUsersRequestId || isRequestCanceled(err)) return
     ElMessage.error('Failed to load users')
   } finally {
-    isLoading.value = false
+    if (requestId === latestUsersRequestId) {
+      isLoading.value = false
+    }
   }
 }
+
+bindDebouncedSearch(fetchUsers)
 
 const handleEdit = (user) => {
   editingId.value = user.id
