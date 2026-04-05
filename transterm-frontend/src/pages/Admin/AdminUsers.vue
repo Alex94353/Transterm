@@ -71,14 +71,17 @@
         </el-table-column>
         <el-table-column label="Actions" width="200">
           <template #default="{ row }">
-            <admin-table-actions
+          <admin-table-actions
               :row="row"
-              :show-delete="false"
+              :show-edit="!isCurrentUser(row)"
+              :show-delete="!isCurrentUser(row)"
+              delete-confirm="Delete this user?"
               @edit="handleEdit"
+              @delete="({ id }) => handleDelete(id)"
             >
               <template #append="{ row: currentRow }">
                 <el-popconfirm
-                  v-if="!currentRow.banned"
+                  v-if="!isCurrentUser(currentRow) && !currentRow.banned"
                   title="Ban this user?"
                   @confirm="handleBan(currentRow.id)"
                 >
@@ -89,7 +92,7 @@
                   </template>
                 </el-popconfirm>
                 <el-popconfirm
-                  v-else
+                  v-else-if="!isCurrentUser(currentRow)"
                   title="Unban this user?"
                   @confirm="handleUnban(currentRow.id)"
                 >
@@ -128,7 +131,7 @@
           <el-input v-model="formData.email" disabled />
         </el-form-item>
         <el-form-item label="Status">
-          <el-radio-group v-model="formData.activated">
+          <el-radio-group v-model="formData.activated" :disabled="isEditingCurrentUser">
             <el-radio :label="true">Active</el-radio>
             <el-radio :label="false">Inactive</el-radio>
           </el-radio-group>
@@ -139,6 +142,7 @@
             :options="roleDialogOptions"
             placeholder="Select role"
             clearable
+            :disabled="isEditingCurrentUser"
             style="width: 100%"
           />
         </el-form-item>
@@ -148,7 +152,7 @@
 </template>
 
 <script setup>
-import { onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import AdminFormDialog from '../../components/Admin/AdminFormDialog.vue'
 import AdminFilterSelect from '../../components/Admin/AdminFilterSelect.vue'
@@ -159,10 +163,12 @@ import AdminSearchBar from '../../components/Admin/AdminSearchBar.vue'
 import AdminTableActions from '../../components/Admin/AdminTableActions.vue'
 import AdminToolbar from '../../components/Admin/AdminToolbar.vue'
 import { useAdminList } from '../../composables/useAdminList'
+import { useAuthStore } from '../../stores/auth'
 import { isRequestCanceled } from '../../services/api'
 import adminService from '../../services/adminService'
 
 const users = ref([])
+const authStore = useAuthStore()
 const roleOptions = ref([])
 const roleDialogOptions = ref([])
 const activatedFilterOptions = [
@@ -280,6 +286,14 @@ const fetchUsers = async () => {
 
 bindDebouncedSearch(fetchUsers)
 
+const isCurrentUser = (user) => {
+  return Number(user?.id) === Number(authStore.user?.id)
+}
+
+const isEditingCurrentUser = computed(() => {
+  return Number(editingId.value) === Number(authStore.user?.id)
+})
+
 const handleEdit = (user) => {
   editingId.value = user.id
   formData.name = user.name
@@ -290,6 +304,12 @@ const handleEdit = (user) => {
 }
 
 const handleSave = async () => {
+  if (isEditingCurrentUser.value) {
+    ElMessage.warning('You cannot change your own status or role')
+    dialogVisible.value = false
+    return
+  }
+
   isSubmitting.value = true
   try {
     await adminService.updateUser(editingId.value, {
@@ -307,6 +327,11 @@ const handleSave = async () => {
 }
 
 const handleBan = async (userId) => {
+  if (isCurrentUser({ id: userId })) {
+    ElMessage.warning('You cannot ban your own account')
+    return
+  }
+
   try {
     await adminService.banUser(userId)
     ElMessage.success('User banned successfully')
@@ -323,6 +348,21 @@ const handleUnban = async (userId) => {
     fetchUsers()
   } catch {
     ElMessage.error('Failed to unban user')
+  }
+}
+
+const handleDelete = async (userId) => {
+  if (isCurrentUser({ id: userId })) {
+    ElMessage.warning('You cannot delete your own account')
+    return
+  }
+
+  try {
+    await adminService.deleteUser(userId)
+    ElMessage.success('User deleted successfully')
+    fetchUsers()
+  } catch (err) {
+    ElMessage.error(err.response?.data?.message || 'Failed to delete user')
   }
 }
 

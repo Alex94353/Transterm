@@ -69,6 +69,7 @@ Route::middleware(['auth:sanctum', 'active.user', 'not.banned', 'permission:admi
     Route::get('/users', [UserManagementController::class, 'index']);
     Route::get('/users/{user}', [UserManagementController::class, 'show']);
     Route::put('/users/{user}', [UserManagementController::class, 'update']);
+    Route::delete('/users/{user}', [UserManagementController::class, 'destroy']);
     Route::patch('/users/{user}/ban', [UserManagementController::class, 'ban']);
     Route::patch('/users/{user}/unban', [UserManagementController::class, 'unban']);
 
@@ -139,5 +140,4 @@ Route::get('/references/{reference}', [ReferenceController::class, 'show']);
 
 Route::get('/countries', [CountryController::class, 'index']);
 Route::get('/countries/{country}', [CountryController::class, 'show']);
-
 

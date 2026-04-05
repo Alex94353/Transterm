@@ -60,6 +60,7 @@ export const adminService = {
   getUsers: (params, requestConfig = {}) => api.get('/admin/users', { params, ...requestConfig }),
   getUser: (id, requestConfig = {}) => api.get(`/admin/users/${id}`, requestConfig),
   updateUser: (id, data) => api.put(`/admin/users/${id}`, data),
+  deleteUser: (id) => api.delete(`/admin/users/${id}`),
   banUser: (id) => api.patch(`/admin/users/${id}/ban`),
   unbanUser: (id) => api.patch(`/admin/users/${id}/unban`),
 

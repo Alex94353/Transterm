@@ -109,6 +109,14 @@ class UserManagementController extends Controller
 
     public function update(Request $request, User $user): JsonResponse
     {
+        if ((int) $request->user()->id === (int) $user->id && (
+            $request->has('activated') || $request->has('role_id')
+        )) {
+            return response()->json([
+                'message' => 'You cannot change your own activation status or role.',
+            ], 422);
+        }
+
         $validated = $request->validate([
             'role_id' => ['sometimes', 'integer', 'exists:roles,id'],
             'username' => ['sometimes', 'string', 'max:255', 'unique:users,username,' . $user->id],
@@ -144,6 +152,12 @@ class UserManagementController extends Controller
 
     public function ban(Request $request, User $user): JsonResponse
     {
+        if ((int) $request->user()->id === (int) $user->id) {
+            return response()->json([
+                'message' => 'You cannot ban your own account.',
+            ], 422);
+        }
+
         $validated = $request->validate([
             'ban_reason' => ['nullable', 'string', 'max:255'],
         ]);
@@ -177,6 +191,22 @@ class UserManagementController extends Controller
                 'profile',
                 'country',
             ]),
+        ]);
+    }
+
+    public function destroy(Request $request, User $user): JsonResponse
+    {
+        if ((int) $request->user()->id === (int) $user->id) {
+            return response()->json([
+                'message' => 'You cannot delete your own account.',
+            ], 422);
+        }
+
+        $user->tokens()->delete();
+        $user->delete();
+
+        return response()->json([
+            'message' => 'User deleted successfully.',
         ]);
     }
 }
