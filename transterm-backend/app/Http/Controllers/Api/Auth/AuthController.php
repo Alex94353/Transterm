@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use Closure;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -15,15 +16,28 @@ class AuthController extends Controller
     {
         $validated = $request->validate([
             'username' => ['required', 'string', 'max:255', 'unique:users,username'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
+            'email' => [
+                'required',
+                'string',
+                'email',
+                'max:255',
+                'unique:users,email',
+                function (string $attribute, mixed $value, Closure $fail): void {
+                    if (! $this->isAllowedAcademicEmail((string) $value)) {
+                        $fail('Only @student.ukf.sk and @ukf.sk email addresses are allowed.');
+                    }
+                },
+            ],
             'name' => ['required', 'string', 'max:255'],
             'surname' => ['nullable', 'string', 'max:255'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
         ]);
 
+        $normalizedEmail = mb_strtolower(trim((string) $validated['email']));
+
         $user = User::create([
             'username' => $validated['username'],
-            'email' => $validated['email'],
+            'email' => $normalizedEmail,
             'name' => $validated['name'],
             'surname' => $validated['surname'] ?? null,
             'password' => Hash::make($validated['password']),
@@ -37,6 +51,14 @@ class AuthController extends Controller
             'token_type' => 'Bearer',
             'user' => $user,
         ], 201);
+    }
+
+    private function isAllowedAcademicEmail(string $email): bool
+    {
+        $normalized = mb_strtolower(trim($email));
+
+        return str_ends_with($normalized, '@student.ukf.sk')
+            || str_ends_with($normalized, '@ukf.sk');
     }
 
     public function login(Request $request): JsonResponse
@@ -66,6 +88,14 @@ class AuthController extends Controller
         if ($user->banned) {
             throw ValidationException::withMessages([
                 'login' => ['Your account is banned.'],
+            ]);
+        }
+
+        // Allow institutional accounts for student/teacher access.
+        // Keep existing admin accounts operable even if they use a local domain.
+        if (! $this->isAllowedAcademicEmail((string) $user->email) && ! $user->hasRole('Admin')) {
+            throw ValidationException::withMessages([
+                'login' => ['Only @student.ukf.sk and @ukf.sk accounts can sign in.'],
             ]);
         }
 

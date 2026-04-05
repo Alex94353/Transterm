@@ -40,7 +40,16 @@
           <el-input
             v-model="formData.email"
             type="email"
-            placeholder="Enter your email"
+            placeholder="Enter your UKF email"
+          />
+        </el-form-item>
+
+        <el-form-item>
+          <el-alert
+            title="Use your institutional email: @student.ukf.sk or @ukf.sk"
+            type="info"
+            :closable="false"
+            show-icon
           />
         </el-form-item>
 
@@ -108,6 +117,8 @@ const formData = reactive({
   confirmPassword: '',
 })
 
+const UKF_EMAIL_REGEX = /^[^@\s]+@(student\.ukf\.sk|ukf\.sk)$/i
+
 const validateConfirmPassword = (rule, value, callback) => {
   if (value === '') {
     callback(new Error('Please confirm your password'))
@@ -116,6 +127,20 @@ const validateConfirmPassword = (rule, value, callback) => {
   } else {
     callback()
   }
+}
+
+const validateUkfEmail = (rule, value, callback) => {
+  if (!value) {
+    callback()
+    return
+  }
+
+  if (!UKF_EMAIL_REGEX.test(value.trim())) {
+    callback(new Error('Only @student.ukf.sk and @ukf.sk emails are allowed'))
+    return
+  }
+
+  callback()
 }
 
 const rules = {
@@ -130,6 +155,7 @@ const rules = {
   email: [
     { required: true, message: 'Email is required', trigger: 'blur' },
     { type: 'email', message: 'Invalid email format', trigger: 'blur' },
+    { validator: validateUkfEmail, trigger: 'blur' },
   ],
   password: [
     { required: true, message: 'Password is required', trigger: 'blur' },
@@ -149,7 +175,7 @@ const handleRegister = async () => {
       username: formData.username,
       name: formData.name,
       surname: formData.surname || null,
-      email: formData.email,
+      email: formData.email.trim().toLowerCase(),
       password: formData.password,
       password_confirmation: formData.confirmPassword,
     })

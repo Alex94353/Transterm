@@ -18,7 +18,16 @@
         <el-form-item label="Login" prop="login">
           <el-input
             v-model="formData.login"
-            placeholder="Enter email or username"
+            placeholder="Enter UKF email or username"
+          />
+        </el-form-item>
+
+        <el-form-item>
+          <el-alert
+            title="Sign in with @student.ukf.sk or @ukf.sk account"
+            type="info"
+            :closable="false"
+            show-icon
           />
         </el-form-item>
 
