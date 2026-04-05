@@ -2,7 +2,7 @@
   <admin-page-shell title="Admin Dashboard" :show-back="false">
 
     <el-row :gutter="20" style="margin-bottom: 30px">
-        <el-col :xs="24" :sm="12" :md="6">
+        <el-col v-if="authStore.isAdmin" :xs="24" :sm="12" :md="6">
           <el-card class="stat-card">
             <div class="stat-content">
               <div class="stat-number">{{ stats.users }}</div>
@@ -29,11 +29,20 @@
           </el-card>
         </el-col>
 
-        <el-col :xs="24" :sm="12" :md="6">
+        <el-col v-if="authStore.isAdmin" :xs="24" :sm="12" :md="6">
           <el-card class="stat-card">
             <div class="stat-content">
               <div class="stat-number">{{ stats.comments }}</div>
               <div class="stat-label">Comments</div>
+            </div>
+          </el-card>
+        </el-col>
+
+        <el-col v-if="authStore.isAdmin" :xs="24" :sm="12" :md="6">
+          <el-card class="stat-card">
+            <div class="stat-content">
+              <div class="stat-number">{{ stats.pendingEditorRequests }}</div>
+              <div class="stat-label">Pending Editor Requests</div>
             </div>
           </el-card>
         </el-col>
@@ -63,7 +72,7 @@
           </el-card>
         </el-col>
 
-        <el-col :xs="24" :sm="12" :md="8">
+        <el-col v-if="authStore.isAdmin" :xs="24" :sm="12" :md="8">
           <el-card class="admin-menu-card" @click="$router.push('/admin/users')">
             <template #header>
               <el-icon><user /></el-icon>
@@ -73,7 +82,22 @@
           </el-card>
         </el-col>
 
-        <el-col :xs="24" :sm="12" :md="8">
+        <el-col v-if="authStore.isAdmin" :xs="24" :sm="12" :md="8">
+          <el-card class="admin-menu-card" @click="$router.push('/admin/editor-role-requests')">
+            <template #header>
+              <el-icon><bell /></el-icon>
+              Editor Requests
+            </template>
+            <p>
+              Review access requests from User/Student accounts
+              <span v-if="stats.pendingEditorRequests > 0">
+                ({{ stats.pendingEditorRequests }} pending)
+              </span>
+            </p>
+          </el-card>
+        </el-col>
+
+        <el-col v-if="authStore.isAdmin" :xs="24" :sm="12" :md="8">
           <el-card class="admin-menu-card" @click="$router.push('/admin/languages')">
             <template #header>
               <el-icon><connection /></el-icon>
@@ -83,7 +107,7 @@
           </el-card>
         </el-col>
 
-        <el-col :xs="24" :sm="12" :md="8">
+        <el-col v-if="authStore.isAdmin" :xs="24" :sm="12" :md="8">
           <el-card class="admin-menu-card" @click="$router.push('/admin/fields')">
             <template #header>
               <el-icon><collection-tag /></el-icon>
@@ -93,7 +117,7 @@
           </el-card>
         </el-col>
 
-        <el-col :xs="24" :sm="12" :md="8">
+        <el-col v-if="authStore.isAdmin" :xs="24" :sm="12" :md="8">
           <el-card class="admin-menu-card" @click="$router.push('/admin/field-groups')">
             <template #header>
               <el-icon><folder-opened /></el-icon>
@@ -103,7 +127,7 @@
           </el-card>
         </el-col>
 
-        <el-col :xs="24" :sm="12" :md="8">
+        <el-col v-if="authStore.isAdmin" :xs="24" :sm="12" :md="8">
           <el-card class="admin-menu-card" @click="$router.push('/admin/references')">
             <template #header>
               <el-icon><link-icon /></el-icon>
@@ -113,7 +137,7 @@
           </el-card>
         </el-col>
 
-        <el-col :xs="24" :sm="12" :md="8">
+        <el-col v-if="authStore.isAdmin" :xs="24" :sm="12" :md="8">
           <el-card class="admin-menu-card" @click="$router.push('/admin/comments')">
             <template #header>
               <el-icon><chat-dot-round /></el-icon>
@@ -128,10 +152,11 @@
 
 <script setup>
 import { onMounted, ref } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElNotification } from 'element-plus'
 import AdminPageShell from '../components/Admin/AdminPageShell.vue'
 import adminService from '../services/adminService'
 import { isRequestCanceled } from '../services/api'
+import { useAuthStore } from '../stores/auth'
 import {
   DocumentCopy,
   Menu as MenuIcon,
@@ -141,15 +166,19 @@ import {
   FolderOpened,
   Link as LinkIcon,
   ChatDotRound,
+  Bell,
 } from '@element-plus/icons-vue'
 
+const authStore = useAuthStore()
 const stats = ref({
   users: 0,
   glossaries: 0,
   terms: 0,
   comments: 0,
+  pendingEditorRequests: 0,
 })
 let latestStatsRequestId = 0
+let lastPendingNotificationCount = 0
 
 const extractTotal = (response) => {
   const payload = response?.data
@@ -166,20 +195,56 @@ const extractTotal = (response) => {
 const fetchStats = async () => {
   const requestId = ++latestStatsRequestId
   try {
-    const [usersRes, glossariesRes, termsRes, commentsRes] = await Promise.all([
-      adminService.getUsers({ per_page: 1 }, { cancelKey: 'admin:dashboard:users' }),
+    if (authStore.isAdmin) {
+      const [usersRes, glossariesRes, termsRes, commentsRes, editorRequestsRes] = await Promise.all([
+        adminService.getUsers({ per_page: 1 }, { cancelKey: 'admin:dashboard:users' }),
+        adminService.adminGetGlossaries({ per_page: 1 }, { cancelKey: 'admin:dashboard:glossaries' }),
+        adminService.adminGetTerms({ per_page: 1 }, { cancelKey: 'admin:dashboard:terms' }),
+        adminService.getComments({ per_page: 1 }, { cancelKey: 'admin:dashboard:comments' }),
+        adminService.getEditorRoleRequests(
+          { status: 'pending', per_page: 1 },
+          { cancelKey: 'admin:dashboard:editor-role-requests' },
+        ),
+      ])
+
+      if (requestId !== latestStatsRequestId) return
+
+      stats.value = {
+        users: extractTotal(usersRes),
+        glossaries: extractTotal(glossariesRes),
+        terms: extractTotal(termsRes),
+        comments: extractTotal(commentsRes),
+        pendingEditorRequests: extractTotal(editorRequestsRes),
+      }
+
+      if (
+        stats.value.pendingEditorRequests > 0 &&
+        stats.value.pendingEditorRequests !== lastPendingNotificationCount
+      ) {
+        ElNotification.warning({
+          title: 'Editor Requests',
+          message: `You have ${stats.value.pendingEditorRequests} pending editor request(s).`,
+          duration: 6000,
+        })
+      }
+      lastPendingNotificationCount = stats.value.pendingEditorRequests
+
+      return
+    }
+
+    const [glossariesRes, termsRes] = await Promise.all([
       adminService.adminGetGlossaries({ per_page: 1 }, { cancelKey: 'admin:dashboard:glossaries' }),
       adminService.adminGetTerms({ per_page: 1 }, { cancelKey: 'admin:dashboard:terms' }),
-      adminService.getComments({ per_page: 1 }, { cancelKey: 'admin:dashboard:comments' }),
     ])
 
     if (requestId !== latestStatsRequestId) return
 
     stats.value = {
-      users: extractTotal(usersRes),
+      users: 0,
       glossaries: extractTotal(glossariesRes),
       terms: extractTotal(termsRes),
-      comments: extractTotal(commentsRes),
+      comments: 0,
+      pendingEditorRequests: 0,
     }
   } catch (err) {
     if (requestId !== latestStatsRequestId || isRequestCanceled(err)) return

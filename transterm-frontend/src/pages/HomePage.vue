@@ -22,6 +22,15 @@
               Browse Glossaries
             </el-button>
             <el-button
+              v-if="authStore.isEditor && authStore.canAccessManagement"
+              type="warning"
+              plain
+              size="large"
+              @click="$router.push('/admin')"
+            >
+              Management
+            </el-button>
+            <el-button
               v-if="!authStore.isAuthenticated"
               size="large"
               @click="$router.push('/register')"

@@ -19,6 +19,7 @@ const AdminLanguages = () => import('../pages/Admin/AdminLanguages.vue')
 const AdminReferences = () => import('../pages/Admin/AdminReferences.vue')
 const AdminTerms = () => import('../pages/Admin/AdminTerms.vue')
 const AdminUsers = () => import('../pages/Admin/AdminUsers.vue')
+const AdminEditorRoleRequests = () => import('../pages/Admin/AdminEditorRoleRequests.vue')
 const NotFoundPage = () => import('../pages/NotFoundPage.vue')
 
 const routes = [
@@ -65,22 +66,27 @@ const routes = [
   {
     path: '/admin',
     component: AdminDashboard,
-    meta: { title: 'Admin Dashboard', requiresAdmin: true },
+    meta: { title: 'Admin Dashboard', requiresManagement: true },
   },
   {
     path: '/admin/glossaries',
     component: AdminGlossaries,
-    meta: { title: 'Admin Glossaries', requiresAdmin: true },
+    meta: { title: 'Admin Glossaries', requiresManagement: true },
   },
   {
     path: '/admin/terms',
     component: AdminTerms,
-    meta: { title: 'Admin Terms', requiresAdmin: true },
+    meta: { title: 'Admin Terms', requiresManagement: true },
   },
   {
     path: '/admin/users',
     component: AdminUsers,
     meta: { title: 'Admin Users', requiresAdmin: true },
+  },
+  {
+    path: '/admin/editor-role-requests',
+    component: AdminEditorRoleRequests,
+    meta: { title: 'Editor Role Requests', requiresAdmin: true },
   },
   {
     path: '/admin/languages',
@@ -135,6 +141,15 @@ router.beforeEach(async (to) => {
       return { path: '/login', query: { redirect: to.fullPath } }
     }
     if (!authStore.isAdmin) {
+      return '/'
+    }
+  }
+
+  if (to.meta.requiresManagement) {
+    if (!authStore.isAuthenticated) {
+      return { path: '/login', query: { redirect: to.fullPath } }
+    }
+    if (!authStore.canAccessManagement) {
       return '/'
     }
   }

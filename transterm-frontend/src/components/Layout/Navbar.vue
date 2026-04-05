@@ -23,7 +23,7 @@
             <router-link to="/my-comments">My Comments</router-link>
           </el-menu-item>
 
-          <el-menu-item v-if="authStore.isAdmin" index="/admin">
+          <el-menu-item v-if="authStore.canAccessManagement" index="/admin">
             <router-link to="/admin">Admin</router-link>
           </el-menu-item>
 

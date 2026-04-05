@@ -50,6 +50,7 @@ class AuthController extends Controller
             'access_token' => $token,
             'token_type' => 'Bearer',
             'user' => $user,
+            'can_access_management' => $this->canAccessManagement($user),
         ], 201);
     }
 
@@ -106,6 +107,7 @@ class AuthController extends Controller
             'access_token' => $token,
             'token_type' => 'Bearer',
             'user' => $user,
+            'can_access_management' => $this->canAccessManagement($user),
         ]);
     }
 
@@ -128,6 +130,14 @@ class AuthController extends Controller
 
         return response()->json([
             'user' => $user,
+            'can_access_management' => $this->canAccessManagement($user),
         ]);
+    }
+
+    private function canAccessManagement(User $user): bool
+    {
+        return $user->hasRole('Admin')
+            || $user->hasRole('Editor')
+            || $user->can('admin.access');
     }
 }

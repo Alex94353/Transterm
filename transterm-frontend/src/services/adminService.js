@@ -64,6 +64,14 @@ export const adminService = {
   banUser: (id) => api.patch(`/admin/users/${id}/ban`),
   unbanUser: (id) => api.patch(`/admin/users/${id}/unban`),
 
+  // Editor role requests
+  getEditorRoleRequests: (params, requestConfig = {}) =>
+    api.get('/admin/editor-role-requests', { params, ...requestConfig }),
+  approveEditorRoleRequest: (id, data = {}) =>
+    api.patch(`/admin/editor-role-requests/${id}/approve`, data),
+  rejectEditorRoleRequest: (id, data = {}) =>
+    api.patch(`/admin/editor-role-requests/${id}/reject`, data),
+
   // Roles
   getRoles: (params, requestConfig = {}) => api.get('/admin/roles', { params, ...requestConfig }),
   getRole: (id, requestConfig = {}) => api.get(`/admin/roles/${id}`, requestConfig),

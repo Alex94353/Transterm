@@ -41,6 +41,24 @@
                 Update Profile
               </el-button>
             </el-form-item>
+
+            <el-form-item v-if="canRequestEditorRole">
+              <el-button
+                type="warning"
+                plain
+                @click="handleRequestEditorRole"
+                :loading="isRequestingEditorRole"
+                :disabled="isEditorRequestPending"
+              >
+                {{ isEditorRequestPending ? 'Editor Request Pending' : 'Request Editor Role' }}
+              </el-button>
+            </el-form-item>
+
+            <el-form-item v-if="canRequestEditorRole && latestEditorRoleRequest">
+              <el-tag :type="editorRequestStatusType">
+                Editor Request: {{ editorRequestStatusLabel }}
+              </el-tag>
+            </el-form-item>
           </el-form>
         </el-col>
 
@@ -88,7 +106,7 @@
 </template>
 
 <script setup>
-import { computed, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import { ElMessage } from 'element-plus'
 import MainLayout from '../components/Layout/MainLayout.vue'
@@ -97,7 +115,9 @@ import userService from '../services/userService'
 const authStore = useAuthStore()
 const form = ref()
 const isLoading = ref(false)
+const isRequestingEditorRole = ref(false)
 const error = ref('')
+const latestEditorRoleRequest = ref(null)
 
 const formData = reactive({
   name: authStore.user?.name || '',
@@ -129,6 +149,48 @@ const userStatusType = computed(() => {
   return userStatus.value === 'active' ? 'success' : 'warning'
 })
 
+const roleNames = computed(() =>
+  (authStore.user?.roles || []).map((role) => String(role.name || '').toLowerCase()),
+)
+
+const canRequestEditorRole = computed(() => {
+  if (!authStore.user) return false
+  if (authStore.isAdmin || authStore.isEditor) return false
+  return roleNames.value.includes('user') || roleNames.value.includes('student')
+})
+
+const editorRequestStatus = computed(() => {
+  return (latestEditorRoleRequest.value?.status || '').toLowerCase()
+})
+
+const isEditorRequestPending = computed(() => editorRequestStatus.value === 'pending')
+
+const editorRequestStatusLabel = computed(() => {
+  if (editorRequestStatus.value === 'approved') return 'Approved'
+  if (editorRequestStatus.value === 'rejected') return 'Rejected'
+  return 'Pending'
+})
+
+const editorRequestStatusType = computed(() => {
+  if (editorRequestStatus.value === 'approved') return 'success'
+  if (editorRequestStatus.value === 'rejected') return 'danger'
+  return 'warning'
+})
+
+const fetchLatestEditorRoleRequest = async () => {
+  if (!canRequestEditorRole.value) {
+    latestEditorRoleRequest.value = null
+    return
+  }
+
+  try {
+    const response = await userService.getLatestEditorRoleRequest()
+    latestEditorRoleRequest.value = response?.data?.request || null
+  } catch {
+    latestEditorRoleRequest.value = null
+  }
+}
+
 const handleUpdate = async () => {
   if (!form.value) return
 
@@ -152,6 +214,27 @@ const handleUpdate = async () => {
     isLoading.value = false
   }
 }
+
+const handleRequestEditorRole = async () => {
+  if (!canRequestEditorRole.value || isEditorRequestPending.value) {
+    return
+  }
+
+  isRequestingEditorRole.value = true
+  try {
+    const response = await userService.requestEditorRole()
+    latestEditorRoleRequest.value = response?.data?.request || latestEditorRoleRequest.value
+    ElMessage.success(response?.data?.message || 'Editor role request submitted')
+  } catch (err) {
+    ElMessage.error(err.response?.data?.message || 'Failed to submit editor role request')
+  } finally {
+    isRequestingEditorRole.value = false
+  }
+}
+
+onMounted(() => {
+  fetchLatestEditorRoleRequest()
+})
 </script>
 
 <style scoped>

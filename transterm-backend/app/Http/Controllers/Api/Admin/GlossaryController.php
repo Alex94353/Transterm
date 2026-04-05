@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\GlossaryCollection;
 use App\Http\Resources\GlossaryResource;
 use App\Models\Glossary;
+use App\Models\User;
 use App\Support\ApiListCache;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -29,6 +30,11 @@ class GlossaryController extends Controller
                 'field.fieldGroup:id,name,code',
                 'translations:id,glossary_id,language_id,title,description',
             ]);
+
+        $user = $request->user();
+        if ($this->shouldScopeToOwner($user)) {
+            $query->where('owner_id', $user->id);
+        }
 
         if ($request->filled('id')) {
             $query->where('id', $request->integer('id'));
@@ -304,5 +310,16 @@ class GlossaryController extends Controller
                 'description' => $resolvedDescription,
             ]
         );
+    }
+
+    private function shouldScopeToOwner(?User $user): bool
+    {
+        if (! $user) {
+            return false;
+        }
+
+        return $user->hasRole('Editor')
+            && ! $user->hasRole('Admin')
+            && ! $user->can('admin.access');
     }
 }

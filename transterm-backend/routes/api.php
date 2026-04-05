@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\Public\CountryController;
 use App\Http\Controllers\Api\Auth\AuthController;
 use App\Http\Controllers\Api\User\ProfileController;
 use App\Http\Controllers\Api\User\CommentController;
+use App\Http\Controllers\Api\User\EditorRoleRequestController as UserEditorRoleRequestController;
 use App\Http\Controllers\Api\Admin\CommentModerationController;
 use App\Http\Controllers\Api\Admin\TermController as AdminTermController;
 use App\Http\Controllers\Api\Admin\GlossaryController as AdminGlossaryController;
@@ -22,6 +23,7 @@ use App\Http\Controllers\Api\Admin\LanguagePairController as AdminLanguagePairCo
 use App\Http\Controllers\Api\Admin\PermissionController as AdminPermissionController;
 use App\Http\Controllers\Api\Admin\RoleController as AdminRoleController;
 use App\Http\Controllers\Api\Admin\UserManagementController;
+use App\Http\Controllers\Api\Admin\EditorRoleRequestController as AdminEditorRoleRequestController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -43,17 +45,15 @@ Route::middleware(['auth:sanctum', 'active.user', 'not.banned'])->group(function
         Route::get('/comments', [CommentController::class, 'index']);
         Route::put('/comments/{comment}', [CommentController::class, 'update']);
         Route::delete('/comments/{comment}', [CommentController::class, 'destroy']);
+
+        Route::get('/editor-role-requests/latest', [UserEditorRoleRequestController::class, 'latest']);
+        Route::post('/editor-role-requests', [UserEditorRoleRequestController::class, 'store']);
     });
 
     Route::post('/terms/{term}/comments', [CommentController::class, 'store']);
 });
 
-Route::middleware(['auth:sanctum', 'active.user', 'not.banned', 'permission:admin.access'])->prefix('admin')->group(function () {
-    Route::get('/comments', [CommentModerationController::class, 'index']);
-    Route::patch('/comments/{comment}/spam', [CommentModerationController::class, 'markSpam']);
-    Route::patch('/comments/{comment}/unspam', [CommentModerationController::class, 'unmarkSpam']);
-    Route::delete('/comments/{comment}', [CommentModerationController::class, 'destroy']);
-
+Route::middleware(['auth:sanctum', 'active.user', 'not.banned', 'role_or_permission:Admin|Editor|admin.access'])->prefix('admin')->group(function () {
     Route::get('/terms', [AdminTermController::class, 'index']);
     Route::get('/terms/{term}', [AdminTermController::class, 'show']);
     Route::post('/terms', [AdminTermController::class, 'store']);
@@ -66,6 +66,19 @@ Route::middleware(['auth:sanctum', 'active.user', 'not.banned', 'permission:admi
     Route::put('/glossaries/{glossary}', [AdminGlossaryController::class, 'update']);
     Route::delete('/glossaries/{glossary}', [AdminGlossaryController::class, 'destroy']);
 
+    // Read-only lookup endpoints needed by glossary/term forms.
+    Route::get('/fields', [AdminFieldController::class, 'index']);
+    Route::get('/fields/{field}', [AdminFieldController::class, 'show']);
+    Route::get('/language-pairs', [AdminLanguagePairController::class, 'index']);
+    Route::get('/language-pairs/{languagePair}', [AdminLanguagePairController::class, 'show']);
+});
+
+Route::middleware(['auth:sanctum', 'active.user', 'not.banned', 'permission:admin.access'])->prefix('admin')->group(function () {
+    Route::get('/comments', [CommentModerationController::class, 'index']);
+    Route::patch('/comments/{comment}/spam', [CommentModerationController::class, 'markSpam']);
+    Route::patch('/comments/{comment}/unspam', [CommentModerationController::class, 'unmarkSpam']);
+    Route::delete('/comments/{comment}', [CommentModerationController::class, 'destroy']);
+
     Route::get('/users', [UserManagementController::class, 'index']);
     Route::get('/users/{user}', [UserManagementController::class, 'show']);
     Route::put('/users/{user}', [UserManagementController::class, 'update']);
@@ -73,14 +86,16 @@ Route::middleware(['auth:sanctum', 'active.user', 'not.banned', 'permission:admi
     Route::patch('/users/{user}/ban', [UserManagementController::class, 'ban']);
     Route::patch('/users/{user}/unban', [UserManagementController::class, 'unban']);
 
+    Route::get('/editor-role-requests', [AdminEditorRoleRequestController::class, 'index']);
+    Route::patch('/editor-role-requests/{editorRoleRequest}/approve', [AdminEditorRoleRequestController::class, 'approve']);
+    Route::patch('/editor-role-requests/{editorRoleRequest}/reject', [AdminEditorRoleRequestController::class, 'reject']);
+
     Route::get('/references', [AdminReferenceController::class, 'index']);
     Route::get('/references/{reference}', [AdminReferenceController::class, 'show']);
     Route::post('/references', [AdminReferenceController::class, 'store']);
     Route::put('/references/{reference}', [AdminReferenceController::class, 'update']);
     Route::delete('/references/{reference}', [AdminReferenceController::class, 'destroy']);
 
-    Route::get('/fields', [AdminFieldController::class, 'index']);
-    Route::get('/fields/{field}', [AdminFieldController::class, 'show']);
     Route::post('/fields', [AdminFieldController::class, 'store']);
     Route::put('/fields/{field}', [AdminFieldController::class, 'update']);
     Route::delete('/fields/{field}', [AdminFieldController::class, 'destroy']);
@@ -91,8 +106,6 @@ Route::middleware(['auth:sanctum', 'active.user', 'not.banned', 'permission:admi
     Route::put('/field-groups/{fieldGroup}', [AdminFieldGroupController::class, 'update']);
     Route::delete('/field-groups/{fieldGroup}', [AdminFieldGroupController::class, 'destroy']);
 
-    Route::get('/language-pairs', [AdminLanguagePairController::class, 'index']);
-    Route::get('/language-pairs/{languagePair}', [AdminLanguagePairController::class, 'show']);
     Route::post('/language-pairs', [AdminLanguagePairController::class, 'store']);
     Route::put('/language-pairs/{languagePair}', [AdminLanguagePairController::class, 'update']);
     Route::delete('/language-pairs/{languagePair}', [AdminLanguagePairController::class, 'destroy']);
@@ -140,4 +153,3 @@ Route::get('/references/{reference}', [ReferenceController::class, 'show']);
 
 Route::get('/countries', [CountryController::class, 'index']);
 Route::get('/countries/{country}', [CountryController::class, 'show']);
-

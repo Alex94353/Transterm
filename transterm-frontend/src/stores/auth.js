@@ -23,21 +23,42 @@ export const useAuthStore = defineStore('auth', () => {
   const token = ref(localStorage.getItem('auth_token') || null)
   const loading = ref(false)
   const error = ref(null)
+  const managementAccess = ref(null)
 
   const isAuthenticated = computed(() => !!token.value)
+
+  const hasRole = (roleName) => {
+    if (!user.value?.roles) return false
+    const normalized = roleName.toLowerCase()
+    return user.value.roles.some((role) => role.name?.toLowerCase() === normalized)
+  }
+
+  const hasPermission = (permissionName) => {
+    if (!user.value?.roles) return false
+    return user.value.roles.some((role) =>
+      role.permissions?.some((permission) => permission.name === permissionName),
+    )
+  }
 
   const isAdmin = computed(() => {
     if (!user.value) return false
 
-    const hasAdminRole = user.value.roles?.some((role) => role.name?.toLowerCase() === 'admin')
-    if (hasAdminRole) return true
-
-    return (
-      user.value.roles?.some((role) =>
-        role.permissions?.some((permission) => permission.name === 'admin.access'),
-      ) || false
-    )
+    return hasRole('admin') || hasPermission('admin.access')
   })
+
+  const isEditor = computed(() => hasRole('editor'))
+  const canAccessManagement = computed(() => {
+    if (typeof managementAccess.value === 'boolean') {
+      return managementAccess.value
+    }
+
+    return isAdmin.value || isEditor.value
+  })
+
+  const syncManagementAccess = (payload) => {
+    const value = payload?.can_access_management
+    managementAccess.value = typeof value === 'boolean' ? value : null
+  }
 
   async function register(payload) {
     loading.value = true
@@ -46,12 +67,14 @@ export const useAuthStore = defineStore('auth', () => {
       const response = await authService.register(payload)
       const registeredUser = response.data.user || null
       const accessToken = response.data.access_token || response.data.token || null
+      syncManagementAccess(response.data)
 
       // Newly created accounts can be inactive on backend.
       // In that case protected endpoints return 403, so we keep user as guest.
       if (registeredUser && registeredUser.activated === false) {
         token.value = null
         user.value = null
+        managementAccess.value = null
         localStorage.removeItem('auth_token')
 
         return {
@@ -68,6 +91,7 @@ export const useAuthStore = defineStore('auth', () => {
         try {
           const meResponse = await authService.getMe()
           user.value = meResponse.data.user
+          syncManagementAccess(meResponse.data)
         } catch {
           // fallback to register response user
         }
@@ -89,12 +113,14 @@ export const useAuthStore = defineStore('auth', () => {
       const response = await authService.login({ login, password })
       token.value = response.data.access_token || response.data.token || null
       user.value = response.data.user
+      syncManagementAccess(response.data)
 
       if (token.value) {
         localStorage.setItem('auth_token', token.value)
         try {
           const meResponse = await authService.getMe()
           user.value = meResponse.data.user
+          syncManagementAccess(meResponse.data)
         } catch {
           // fallback to login response user
         }
@@ -117,6 +143,7 @@ export const useAuthStore = defineStore('auth', () => {
     } finally {
       token.value = null
       user.value = null
+      managementAccess.value = null
       localStorage.removeItem('auth_token')
     }
   }
@@ -128,10 +155,12 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       const response = await authService.getMe()
       user.value = response.data.user
+      syncManagementAccess(response.data)
       return response.data.user
     } catch (err) {
       console.error('Failed to get current user:', err)
       token.value = null
+      managementAccess.value = null
       localStorage.removeItem('auth_token')
       throw err
     } finally {
@@ -144,8 +173,11 @@ export const useAuthStore = defineStore('auth', () => {
     token,
     loading,
     error,
+    managementAccess,
     isAuthenticated,
     isAdmin,
+    isEditor,
+    canAccessManagement,
     register,
     login,
     logout,

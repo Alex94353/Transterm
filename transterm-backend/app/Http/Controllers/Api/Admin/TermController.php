@@ -5,7 +5,9 @@ namespace App\Http\Controllers\Api\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\TermCollection;
 use App\Http\Resources\TermResource;
+use App\Models\Glossary;
 use App\Models\Term;
+use App\Models\User;
 use App\Support\ApiListCache;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -25,6 +27,11 @@ class TermController extends Controller
                 'translations:id,term_id,language_id,title,definition,plural,context,synonym,notes',
                 'translations.language:id,name,code',
             ]);
+
+        $user = $request->user();
+        if ($this->shouldScopeToCreator($user)) {
+            $query->where('created_by', $user->id);
+        }
 
         if ($request->filled('id')) {
             $query->where('id', $request->integer('id'));
@@ -167,10 +174,13 @@ class TermController extends Controller
             'definition' => ['nullable', 'string'],
         ]);
 
+        $user = $request->user();
+        $this->ensureEditorOwnsGlossary($user, (int) $validated['glossary_id']);
+
         $term = Term::create([
             'glossary_id' => $validated['glossary_id'],
             'field_id' => $validated['field_id'],
-            'created_by' => $request->user()->id,
+            'created_by' => $user->id,
         ]);
 
         $this->syncTranslationFromPayload($request, $term, $validated);
@@ -210,6 +220,11 @@ class TermController extends Controller
             'title' => ['nullable', 'string', 'max:255'],
             'definition' => ['nullable', 'string'],
         ]);
+
+        $user = $request->user();
+        if (array_key_exists('glossary_id', $validated)) {
+            $this->ensureEditorOwnsGlossary($user, (int) $validated['glossary_id']);
+        }
 
         $termData = $validated;
         unset($termData['translation_language_id'], $termData['title'], $termData['definition']);
@@ -304,5 +319,34 @@ class TermController extends Controller
                 'definition' => $resolvedDefinition,
             ]
         );
+    }
+
+    private function ensureEditorOwnsGlossary(?User $user, int $glossaryId): void
+    {
+        if (! $this->shouldScopeToCreator($user)) {
+            return;
+        }
+
+        $ownsGlossary = Glossary::query()
+            ->whereKey($glossaryId)
+            ->where('owner_id', $user->id)
+            ->exists();
+
+        if (! $ownsGlossary) {
+            throw ValidationException::withMessages([
+                'glossary_id' => ['Editors can create or move terms only inside their own glossaries.'],
+            ]);
+        }
+    }
+
+    private function shouldScopeToCreator(?User $user): bool
+    {
+        if (! $user) {
+            return false;
+        }
+
+        return $user->hasRole('Editor')
+            && ! $user->hasRole('Admin')
+            && ! $user->can('admin.access');
     }
 }
