@@ -84,6 +84,26 @@
         </el-col>
 
         <el-col :xs="24" :sm="12" :md="8">
+          <el-card class="admin-menu-card" @click="$router.push('/admin/fields')">
+            <template #header>
+              <el-icon><collection-tag /></el-icon>
+              Fields
+            </template>
+            <p>Manage terminology fields</p>
+          </el-card>
+        </el-col>
+
+        <el-col :xs="24" :sm="12" :md="8">
+          <el-card class="admin-menu-card" @click="$router.push('/admin/field-groups')">
+            <template #header>
+              <el-icon><folder-opened /></el-icon>
+              Field Groups
+            </template>
+            <p>Manage field group categories</p>
+          </el-card>
+        </el-col>
+
+        <el-col :xs="24" :sm="12" :md="8">
           <el-card class="admin-menu-card" @click="$router.push('/admin/references')">
             <template #header>
               <el-icon><link-icon /></el-icon>
@@ -117,6 +137,8 @@ import {
   Menu as MenuIcon,
   User,
   Connection,
+  CollectionTag,
+  FolderOpened,
   Link as LinkIcon,
   ChatDotRound,
 } from '@element-plus/icons-vue'

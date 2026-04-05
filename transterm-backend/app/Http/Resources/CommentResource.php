@@ -56,6 +56,10 @@ class CommentResource extends JsonResource
             }),
 
             'user' => $this->whenLoaded('user', function () {
+                if (! $this->user) {
+                    return null;
+                }
+
                 return [
                     'id' => $this->user->id,
                     'username' => $this->user->username,

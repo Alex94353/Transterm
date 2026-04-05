@@ -12,6 +12,10 @@ class UserManagementController extends Controller
     public function index(Request $request): JsonResponse
     {
         $query = User::query()
+            ->withCount([
+                'ownedGlossaries',
+                'createdTerms',
+            ])
             ->with([
                 'roles:id,name',
             ]);
@@ -96,7 +100,10 @@ class UserManagementController extends Controller
 
     public function show(User $user): JsonResponse
     {
-        $user->load([
+        $user->loadCount([
+            'ownedGlossaries',
+            'createdTerms',
+        ])->load([
             'roles:id,name',
             'profile',
             'country',
@@ -199,6 +206,20 @@ class UserManagementController extends Controller
         if ((int) $request->user()->id === (int) $user->id) {
             return response()->json([
                 'message' => 'You cannot delete your own account.',
+            ], 422);
+        }
+
+        $user->loadCount([
+            'ownedGlossaries',
+            'createdTerms',
+        ]);
+
+        $ownedGlossariesCount = (int) ($user->owned_glossaries_count ?? 0);
+        $createdTermsCount = (int) ($user->created_terms_count ?? 0);
+
+        if ($ownedGlossariesCount > 0 || $createdTermsCount > 0) {
+            return response()->json([
+                'message' => "Cannot delete user with owned content (glossaries: {$ownedGlossariesCount}, terms: {$createdTermsCount}). Reassign or delete the content first.",
             ], 422);
         }
 

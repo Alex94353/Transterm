@@ -36,14 +36,38 @@
                 {{ row.flag_path || '-' }}
               </template>
             </el-table-column>
-            <el-table-column label="Actions" width="200">
+            <el-table-column label="Usage" min-width="260">
+              <template #default="{ row }">
+                <el-space :size="6" wrap>
+                  <el-tag size="small" effect="plain">
+                    Pairs: {{ getPairUsageCount(row) }}
+                  </el-tag>
+                  <el-tag size="small" type="info" effect="plain">
+                    Translations: {{ getTranslationUsageCount(row) }}
+                  </el-tag>
+                </el-space>
+              </template>
+            </el-table-column>
+            <el-table-column label="Actions" width="220">
               <template #default="{ row }">
                 <admin-table-actions
                   :row="row"
+                  :show-delete="getLanguageUsageCount(row) === 0"
                   delete-confirm="Delete this language?"
                   @edit="openLanguageEdit"
                   @delete="({ id }) => deleteLanguage(id)"
-                />
+                >
+                  <template #append="{ row: currentRow }">
+                    <el-tag
+                      v-if="getLanguageUsageCount(currentRow) > 0"
+                      type="warning"
+                      effect="plain"
+                      size="small"
+                    >
+                      In use
+                    </el-tag>
+                  </template>
+                </admin-table-actions>
               </template>
             </el-table-column>
           </el-table>
@@ -108,14 +132,31 @@
                 {{ row.source_language?.name }} -> {{ row.target_language?.name }}
               </template>
             </el-table-column>
-            <el-table-column label="Actions" width="200">
+            <el-table-column label="Glossaries" width="120">
+              <template #default="{ row }">
+                {{ row.glossaries_count ?? 0 }}
+              </template>
+            </el-table-column>
+            <el-table-column label="Actions" width="220">
               <template #default="{ row }">
                 <admin-table-actions
                   :row="row"
+                  :show-delete="(row.glossaries_count ?? 0) === 0"
                   delete-confirm="Delete this pair?"
                   @edit="openPairEdit"
                   @delete="({ id }) => deletePair(id)"
-                />
+                >
+                  <template #append="{ row: currentRow }">
+                    <el-tag
+                      v-if="(currentRow.glossaries_count ?? 0) > 0"
+                      type="warning"
+                      effect="plain"
+                      size="small"
+                    >
+                      In use
+                    </el-tag>
+                  </template>
+                </admin-table-actions>
               </template>
             </el-table-column>
           </el-table>
@@ -416,6 +457,23 @@ const handlePairPageSizeChange = (size) => {
   fetchLanguagePairs()
 }
 
+const toSafeCount = (value) => {
+  const normalized = Number(value)
+  return Number.isFinite(normalized) ? normalized : 0
+}
+
+const getPairUsageCount = (language) => {
+  return toSafeCount(language?.source_pairs_count) + toSafeCount(language?.target_pairs_count)
+}
+
+const getTranslationUsageCount = (language) => {
+  return toSafeCount(language?.glossary_translations_count) + toSafeCount(language?.term_translations_count)
+}
+
+const getLanguageUsageCount = (language) => {
+  return getPairUsageCount(language) + getTranslationUsageCount(language)
+}
+
 const openLanguageCreate = () => {
   isLanguageEditMode.value = false
   languageDialogTitle.value = 'New Language'
@@ -468,8 +526,8 @@ const deleteLanguage = async (id) => {
     ElMessage.success('Language deleted successfully')
     fetchLanguages()
     fetchLanguageOptions()
-  } catch {
-    ElMessage.error('Failed to delete language')
+  } catch (err) {
+    ElMessage.error(err.response?.data?.message || 'Failed to delete language')
   }
 }
 
@@ -520,8 +578,8 @@ const deletePair = async (id) => {
     await adminService.deleteLanguagePair(id)
     ElMessage.success('Language pair deleted successfully')
     fetchLanguagePairs()
-  } catch {
-    ElMessage.error('Failed to delete language pair')
+  } catch (err) {
+    ElMessage.error(err.response?.data?.message || 'Failed to delete language pair')
   }
 }
 </script>

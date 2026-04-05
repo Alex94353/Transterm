@@ -19,6 +19,10 @@ class LanguageResource extends JsonResource
             'name' => $this->name,
             'code' => $this->code,
             'flag_path' => $this->flag_path,
+            'source_pairs_count' => $this->whenCounted('sourcePairs'),
+            'target_pairs_count' => $this->whenCounted('targetPairs'),
+            'glossary_translations_count' => $this->whenCounted('glossaryTranslations'),
+            'term_translations_count' => $this->whenCounted('termTranslations'),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];

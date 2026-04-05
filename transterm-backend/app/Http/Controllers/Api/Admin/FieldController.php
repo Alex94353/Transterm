@@ -45,8 +45,11 @@ class FieldController extends Controller
             });
         }
 
+        $idOrder = strtolower((string) $request->input('id_order', 'desc'));
+        $idOrder = in_array($idOrder, ['asc', 'desc'], true) ? $idOrder : 'desc';
+
         return new FieldCollection(
-            $query->orderBy('name')
+            $query->orderBy('id', $idOrder)
                 ->paginate($request->integer('per_page', 10))
                 ->withQueryString()
         );
@@ -126,6 +129,20 @@ class FieldController extends Controller
     public function destroy(Field $field): JsonResponse
     {
         $this->authorize('delete', $field);
+
+        $field->loadCount([
+            'glossaries',
+            'terms',
+        ]);
+
+        $glossariesCount = (int) ($field->glossaries_count ?? 0);
+        $termsCount = (int) ($field->terms_count ?? 0);
+
+        if ($glossariesCount > 0 || $termsCount > 0) {
+            return response()->json([
+                'message' => "Cannot delete field in use ({$glossariesCount} glossaries, {$termsCount} terms). Reassign related data first.",
+            ], 422);
+        }
 
         $field->delete();
 

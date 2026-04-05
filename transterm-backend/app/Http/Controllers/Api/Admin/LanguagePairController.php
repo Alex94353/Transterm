@@ -140,6 +140,18 @@ class LanguagePairController extends Controller
 
     public function destroy(LanguagePair $languagePair): JsonResponse
     {
+        $languagePair->loadCount([
+            'glossaries',
+        ]);
+
+        $glossariesCount = (int) ($languagePair->glossaries_count ?? 0);
+
+        if ($glossariesCount > 0) {
+            return response()->json([
+                'message' => "Cannot delete language pair in use ({$glossariesCount} glossaries). Reassign or delete related glossaries first.",
+            ], 422);
+        }
+
         $languagePair->delete();
 
         return response()->json([

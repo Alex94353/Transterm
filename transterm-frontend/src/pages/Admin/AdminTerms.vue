@@ -103,8 +103,19 @@
             style="width: 100%"
           />
         </el-form-item>
+        <el-form-item label="Title">
+          <el-input v-model="formData.title" placeholder="Term title" />
+        </el-form-item>
+        <el-form-item label="Definition">
+          <el-input
+            v-model="formData.definition"
+            type="textarea"
+            :rows="3"
+            placeholder="Term definition"
+          />
+        </el-form-item>
         <el-alert
-          title="Term text/definition come from translations. Here you can set only glossary and field."
+          title="Title and definition are saved to term translations."
           type="info"
           :closable="false"
           show-icon
@@ -115,7 +126,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
 import AdminFormDialog from '../../components/Admin/AdminFormDialog.vue'
@@ -171,6 +182,9 @@ const filters = reactive({
 const formData = reactive({
   glossary_id: null,
   field_id: null,
+  title: '',
+  definition: '',
+  translation_language_id: null,
 })
 
 const dialogTitle = ref('New Term')
@@ -255,24 +269,57 @@ const handleCreate = () => {
   dialogTitle.value = 'New Term'
   formData.glossary_id = null
   formData.field_id = null
+  formData.title = ''
+  formData.definition = ''
+  formData.translation_language_id = null
   dialogVisible.value = true
 }
 
+const getPrimaryTranslation = (term) => term?.translations?.[0] ?? null
+
+const getSourceLanguageIdByGlossaryId = (glossaryId) => {
+  const glossary = glossaries.value.find((item) => Number(item.id) === Number(glossaryId))
+  return glossary?.language_pair?.source_language?.id ?? glossary?.translations?.[0]?.language_id ?? null
+}
+
+watch(() => formData.glossary_id, (glossaryId) => {
+  if (isEditMode.value) return
+  formData.translation_language_id = getSourceLanguageIdByGlossaryId(glossaryId)
+})
+
 const handleEdit = (term) => {
   isEditMode.value = true
+  const primaryTranslation = getPrimaryTranslation(term)
   editingId.value = term.id
   dialogTitle.value = 'Edit Term'
   formData.glossary_id = term.glossary_id
   formData.field_id = term.field_id
+  formData.title = primaryTranslation?.title || ''
+  formData.definition = primaryTranslation?.definition || ''
+  formData.translation_language_id = primaryTranslation?.language_id
+    || getSourceLanguageIdByGlossaryId(term.glossary_id)
+    || null
   dialogVisible.value = true
 }
 
 const handleSave = async () => {
+  const normalizedTitle = formData.title?.trim()
+  if (!normalizedTitle) {
+    ElMessage.warning('Title is required')
+    return
+  }
+
   isSubmitting.value = true
   try {
+    const translationLanguageId = formData.translation_language_id
+      || getSourceLanguageIdByGlossaryId(formData.glossary_id)
+
     const payload = {
       glossary_id: formData.glossary_id,
       field_id: formData.field_id,
+      title: normalizedTitle,
+      definition: formData.definition?.trim() || null,
+      translation_language_id: translationLanguageId || undefined,
     }
 
     if (isEditMode.value) {

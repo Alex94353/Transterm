@@ -99,14 +99,26 @@
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="Actions" width="200">
+      <el-table-column label="Actions" width="220">
         <template #default="{ row }">
           <admin-table-actions
             :row="row"
+            :show-delete="(row.terms_count ?? 0) === 0"
             delete-confirm="Delete this glossary?"
             @edit="handleEdit"
             @delete="({ id }) => handleDelete(id)"
-          />
+          >
+            <template #append="{ row: currentRow }">
+              <el-tag
+                v-if="(currentRow.terms_count ?? 0) > 0"
+                type="warning"
+                effect="plain"
+                size="small"
+              >
+                In use
+              </el-tag>
+            </template>
+          </admin-table-actions>
         </template>
       </el-table-column>
     </el-table>
@@ -142,6 +154,17 @@
             style="width: 100%"
           />
         </el-form-item>
+        <el-form-item label="Title">
+          <el-input v-model="formData.title" placeholder="Glossary title" />
+        </el-form-item>
+        <el-form-item label="Description">
+          <el-input
+            v-model="formData.description"
+            type="textarea"
+            :rows="3"
+            placeholder="Glossary description"
+          />
+        </el-form-item>
         <el-form-item label="Approved">
           <el-switch v-model="formData.approved" />
         </el-form-item>
@@ -149,7 +172,7 @@
           <el-switch v-model="formData.is_public" />
         </el-form-item>
         <el-alert
-          title="Glossary title and description are managed in translations, not in this form."
+          title="Title and description are saved to glossary translations."
           type="info"
           :closable="false"
           show-icon
@@ -160,7 +183,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
 import AdminFormDialog from '../../components/Admin/AdminFormDialog.vue'
@@ -217,6 +240,9 @@ const filters = reactive({
 const formData = reactive({
   language_pair_id: null,
   field_id: null,
+  title: '',
+  description: '',
+  translation_language_id: null,
   approved: false,
   is_public: false,
 })
@@ -315,28 +341,61 @@ const handleCreate = () => {
   dialogTitle.value = 'New Glossary'
   formData.language_pair_id = null
   formData.field_id = null
+  formData.title = ''
+  formData.description = ''
+  formData.translation_language_id = null
   formData.approved = false
   formData.is_public = false
   dialogVisible.value = true
 }
 
+const getSourceLanguageIdByPairId = (languagePairId) => {
+  const pair = languagePairs.value.find((item) => Number(item.id) === Number(languagePairId))
+  return pair?.source_language?.id ?? null
+}
+
+const getPrimaryTranslation = (glossary) => glossary?.translations?.[0] ?? null
+
+watch(() => formData.language_pair_id, (languagePairId) => {
+  if (isEditMode.value) return
+  formData.translation_language_id = getSourceLanguageIdByPairId(languagePairId)
+})
+
 const handleEdit = (glossary) => {
   isEditMode.value = true
   editingId.value = glossary.id
+  const primaryTranslation = getPrimaryTranslation(glossary)
   dialogTitle.value = 'Edit Glossary'
   formData.language_pair_id = glossary.language_pair?.id || null
   formData.field_id = glossary.field?.id || null
+  formData.title = primaryTranslation?.title || ''
+  formData.description = primaryTranslation?.description || ''
+  formData.translation_language_id = primaryTranslation?.language_id
+    || getSourceLanguageIdByPairId(glossary.language_pair?.id)
+    || null
   formData.approved = !!glossary.approved
   formData.is_public = !!glossary.is_public
   dialogVisible.value = true
 }
 
 const handleSave = async () => {
+  const normalizedTitle = formData.title?.trim()
+  if (!normalizedTitle) {
+    ElMessage.warning('Title is required')
+    return
+  }
+
   isSubmitting.value = true
   try {
+    const translationLanguageId = formData.translation_language_id
+      || getSourceLanguageIdByPairId(formData.language_pair_id)
+
     const payload = {
       language_pair_id: formData.language_pair_id,
       field_id: formData.field_id,
+      title: normalizedTitle,
+      description: formData.description?.trim() || null,
+      translation_language_id: translationLanguageId || undefined,
       approved: formData.approved,
       is_public: formData.is_public,
     }
@@ -362,8 +421,8 @@ const handleDelete = async (id) => {
     await adminService.deleteGlossary(id)
     ElMessage.success('Glossary deleted successfully')
     fetchGlossaries()
-  } catch {
-    ElMessage.error('Failed to delete glossary')
+  } catch (err) {
+    ElMessage.error(err.response?.data?.message || 'Failed to delete glossary')
   }
 }
 

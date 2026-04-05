@@ -19,6 +19,8 @@ class FieldResource extends JsonResource
             'field_group_id' => $this->field_group_id,
             'name' => $this->name,
             'code' => $this->code,
+            'glossaries_count' => $this->whenCounted('glossaries'),
+            'terms_count' => $this->whenCounted('terms'),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
 

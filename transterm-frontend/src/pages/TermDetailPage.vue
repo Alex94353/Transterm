@@ -87,7 +87,7 @@
           class="comment-item"
         >
           <div class="comment-header">
-            <strong>{{ comment.user?.name }}</strong>
+            <strong>{{ comment.user?.name || comment.user?.username || 'Deleted user' }}</strong>
             <span class="comment-date">{{
               new Date(comment.created_at).toLocaleDateString()
             }}</span>

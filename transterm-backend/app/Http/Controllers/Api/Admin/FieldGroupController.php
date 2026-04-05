@@ -35,8 +35,11 @@ class FieldGroupController extends Controller
             });
         }
 
+        $idOrder = strtolower((string) $request->input('id_order', 'desc'));
+        $idOrder = in_array($idOrder, ['asc', 'desc'], true) ? $idOrder : 'desc';
+
         return new FieldGroupCollection(
-            $query->orderBy('name')
+            $query->orderBy('id', $idOrder)
                 ->paginate($request->integer('per_page', 10))
                 ->withQueryString()
         );
@@ -97,6 +100,12 @@ class FieldGroupController extends Controller
 
     public function destroy(FieldGroup $fieldGroup): JsonResponse
     {
+        if ($fieldGroup->fields()->exists()) {
+            return response()->json([
+                'message' => 'Cannot delete field group with existing fields. Move or delete fields first.',
+            ], 422);
+        }
+
         $fieldGroup->delete();
 
         return response()->json([

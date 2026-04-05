@@ -12,6 +12,8 @@ const UserCommentsPage = () => import('../pages/UserCommentsPage.vue')
 const UserProfilePage = () => import('../pages/UserProfilePage.vue')
 const AdminDashboard = () => import('../pages/AdminDashboard.vue')
 const AdminComments = () => import('../pages/Admin/AdminComments.vue')
+const AdminFields = () => import('../pages/Admin/AdminFields.vue')
+const AdminFieldGroups = () => import('../pages/Admin/AdminFieldGroups.vue')
 const AdminGlossaries = () => import('../pages/Admin/AdminGlossaries.vue')
 const AdminLanguages = () => import('../pages/Admin/AdminLanguages.vue')
 const AdminReferences = () => import('../pages/Admin/AdminReferences.vue')
@@ -89,6 +91,16 @@ const routes = [
     path: '/admin/references',
     component: AdminReferences,
     meta: { title: 'Admin References', requiresAdmin: true },
+  },
+  {
+    path: '/admin/fields',
+    component: AdminFields,
+    meta: { title: 'Admin Fields', requiresAdmin: true },
+  },
+  {
+    path: '/admin/field-groups',
+    component: AdminFieldGroups,
+    meta: { title: 'Admin Field Groups', requiresAdmin: true },
   },
   {
     path: '/admin/comments',

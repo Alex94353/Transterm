@@ -18,6 +18,7 @@ class FieldGroupResource extends JsonResource
             'id' => $this->id,
             'name' => $this->name,
             'code' => $this->code,
+            'fields_count' => $this->whenCounted('fields'),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
 

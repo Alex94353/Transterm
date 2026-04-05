@@ -9,6 +9,7 @@ use App\Models\Glossary;
 use App\Support\ApiListCache;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 class GlossaryController extends Controller
 {
@@ -152,6 +153,9 @@ class GlossaryController extends Controller
             'field_id' => ['required', 'integer', 'exists:fields,id'],
             'approved' => ['sometimes', 'boolean'],
             'is_public' => ['sometimes', 'boolean'],
+            'translation_language_id' => ['nullable', 'integer', 'exists:languages,id'],
+            'title' => ['nullable', 'string', 'max:255'],
+            'description' => ['nullable', 'string'],
         ]);
 
         $glossary = Glossary::create([
@@ -161,6 +165,8 @@ class GlossaryController extends Controller
             'approved' => $validated['approved'] ?? false,
             'is_public' => $validated['is_public'] ?? false,
         ]);
+
+        $this->syncTranslationFromPayload($request, $glossary, $validated);
 
         $glossary->load([
             'languagePair:id,source_language_id,target_language_id',
@@ -194,9 +200,19 @@ class GlossaryController extends Controller
             'field_id' => ['sometimes', 'integer', 'exists:fields,id'],
             'approved' => ['sometimes', 'boolean'],
             'is_public' => ['sometimes', 'boolean'],
+            'translation_language_id' => ['nullable', 'integer', 'exists:languages,id'],
+            'title' => ['nullable', 'string', 'max:255'],
+            'description' => ['nullable', 'string'],
         ]);
 
-        $glossary->update($validated);
+        $glossaryData = $validated;
+        unset($glossaryData['translation_language_id'], $glossaryData['title'], $glossaryData['description']);
+
+        if ($glossaryData !== []) {
+            $glossary->update($glossaryData);
+        }
+
+        $this->syncTranslationFromPayload($request, $glossary, $validated);
 
         $glossary->load([
             'languagePair:id,source_language_id,target_language_id',
@@ -224,11 +240,69 @@ class GlossaryController extends Controller
     {
         $this->authorize('delete', $glossary);
 
+        $glossary->loadCount([
+            'terms',
+        ]);
+
+        $termsCount = (int) ($glossary->terms_count ?? 0);
+        if ($termsCount > 0) {
+            return response()->json([
+                'message' => "Cannot delete glossary in use ({$termsCount} terms). Reassign or delete related terms first.",
+            ], 422);
+        }
+
         $glossary->delete();
         ApiListCache::bumpGlossaryAndTermVersions();
 
         return response()->json([
             'message' => 'Glossary deleted successfully.',
         ]);
+    }
+
+    private function syncTranslationFromPayload(Request $request, Glossary $glossary, array $validated): void
+    {
+        if (! $request->hasAny(['translation_language_id', 'title', 'description'])) {
+            return;
+        }
+
+        $languageId = $validated['translation_language_id']
+            ?? $glossary->translations()->orderBy('id')->value('language_id')
+            ?? $glossary->languagePair()->value('source_language_id');
+
+        if (! $languageId) {
+            throw ValidationException::withMessages([
+                'translation_language_id' => ['Unable to resolve translation language for glossary.'],
+            ]);
+        }
+
+        $existingTranslation = $glossary->translations()
+            ->where('language_id', $languageId)
+            ->first();
+
+        $resolvedTitle = $validated['title'] ?? $existingTranslation?->title;
+        $resolvedTitle = is_string($resolvedTitle) ? trim($resolvedTitle) : null;
+
+        if (! $resolvedTitle) {
+            throw ValidationException::withMessages([
+                'title' => ['Title is required when managing glossary translation.'],
+            ]);
+        }
+
+        $resolvedDescription = array_key_exists('description', $validated)
+            ? $validated['description']
+            : $existingTranslation?->description;
+
+        if (is_string($resolvedDescription)) {
+            $resolvedDescription = trim($resolvedDescription);
+            $resolvedDescription = $resolvedDescription === '' ? null : $resolvedDescription;
+        }
+
+        $glossary->translations()->updateOrCreate(
+            ['language_id' => $languageId],
+            [
+                'title' => $resolvedTitle,
+                'description' => $resolvedDescription,
+            ]
+        );
     }
 }

@@ -9,6 +9,7 @@ use App\Models\Term;
 use App\Support\ApiListCache;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 class TermController extends Controller
 {
@@ -161,6 +162,9 @@ class TermController extends Controller
         $validated = $request->validate([
             'glossary_id' => ['required', 'integer', 'exists:glossaries,id'],
             'field_id' => ['required', 'integer', 'exists:fields,id'],
+            'translation_language_id' => ['nullable', 'integer', 'exists:languages,id'],
+            'title' => ['nullable', 'string', 'max:255'],
+            'definition' => ['nullable', 'string'],
         ]);
 
         $term = Term::create([
@@ -168,6 +172,8 @@ class TermController extends Controller
             'field_id' => $validated['field_id'],
             'created_by' => $request->user()->id,
         ]);
+
+        $this->syncTranslationFromPayload($request, $term, $validated);
 
         $term->load([
             'glossary.translations.language',
@@ -200,9 +206,19 @@ class TermController extends Controller
         $validated = $request->validate([
             'glossary_id' => ['sometimes', 'integer', 'exists:glossaries,id'],
             'field_id' => ['sometimes', 'integer', 'exists:fields,id'],
+            'translation_language_id' => ['nullable', 'integer', 'exists:languages,id'],
+            'title' => ['nullable', 'string', 'max:255'],
+            'definition' => ['nullable', 'string'],
         ]);
 
-        $term->update($validated);
+        $termData = $validated;
+        unset($termData['translation_language_id'], $termData['title'], $termData['definition']);
+
+        if ($termData !== []) {
+            $term->update($termData);
+        }
+
+        $this->syncTranslationFromPayload($request, $term, $validated);
 
         $term->load([
             'glossary.translations.language',
@@ -237,5 +253,56 @@ class TermController extends Controller
         return response()->json([
             'message' => 'Term deleted successfully.',
         ]);
+    }
+
+    private function syncTranslationFromPayload(Request $request, Term $term, array $validated): void
+    {
+        if (! $request->hasAny(['translation_language_id', 'title', 'definition'])) {
+            return;
+        }
+
+        $term->loadMissing([
+            'glossary.languagePair:id,source_language_id,target_language_id',
+        ]);
+
+        $languageId = $validated['translation_language_id']
+            ?? $term->translations()->orderBy('id')->value('language_id')
+            ?? $term->glossary?->languagePair?->source_language_id;
+
+        if (! $languageId) {
+            throw ValidationException::withMessages([
+                'translation_language_id' => ['Unable to resolve translation language for term.'],
+            ]);
+        }
+
+        $existingTranslation = $term->translations()
+            ->where('language_id', $languageId)
+            ->first();
+
+        $resolvedTitle = $validated['title'] ?? $existingTranslation?->title;
+        $resolvedTitle = is_string($resolvedTitle) ? trim($resolvedTitle) : null;
+
+        if (! $resolvedTitle) {
+            throw ValidationException::withMessages([
+                'title' => ['Title is required when managing term translation.'],
+            ]);
+        }
+
+        $resolvedDefinition = array_key_exists('definition', $validated)
+            ? $validated['definition']
+            : $existingTranslation?->definition;
+
+        if (is_string($resolvedDefinition)) {
+            $resolvedDefinition = trim($resolvedDefinition);
+            $resolvedDefinition = $resolvedDefinition === '' ? null : $resolvedDefinition;
+        }
+
+        $term->translations()->updateOrCreate(
+            ['language_id' => $languageId],
+            [
+                'title' => $resolvedTitle,
+                'definition' => $resolvedDefinition,
+            ]
+        );
     }
 }

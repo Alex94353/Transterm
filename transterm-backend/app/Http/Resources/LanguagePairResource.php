@@ -18,6 +18,7 @@ class LanguagePairResource extends JsonResource
             'id' => $this->id,
             'source_language_id' => $this->source_language_id,
             'target_language_id' => $this->target_language_id,
+            'glossaries_count' => $this->whenCounted('glossaries'),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
 

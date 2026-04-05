@@ -69,17 +69,25 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="Actions" width="200">
+        <el-table-column label="Actions" width="240">
           <template #default="{ row }">
           <admin-table-actions
               :row="row"
               :show-edit="!isCurrentUser(row)"
-              :show-delete="!isCurrentUser(row)"
+              :show-delete="!isCurrentUser(row) && !isUserInUse(row)"
               delete-confirm="Delete this user?"
               @edit="handleEdit"
               @delete="({ id }) => handleDelete(id)"
             >
               <template #append="{ row: currentRow }">
+                <el-tag
+                  v-if="!isCurrentUser(currentRow) && isUserInUse(currentRow)"
+                  type="warning"
+                  effect="plain"
+                  size="small"
+                >
+                  In use
+                </el-tag>
                 <el-popconfirm
                   v-if="!isCurrentUser(currentRow) && !currentRow.banned"
                   title="Ban this user?"
@@ -288,6 +296,19 @@ bindDebouncedSearch(fetchUsers)
 
 const isCurrentUser = (user) => {
   return Number(user?.id) === Number(authStore.user?.id)
+}
+
+const toSafeCount = (value) => {
+  const normalized = Number(value)
+  return Number.isFinite(normalized) ? normalized : 0
+}
+
+const getUserOwnedContentCount = (user) => {
+  return toSafeCount(user?.owned_glossaries_count) + toSafeCount(user?.created_terms_count)
+}
+
+const isUserInUse = (user) => {
+  return getUserOwnedContentCount(user) > 0
 }
 
 const isEditingCurrentUser = computed(() => {

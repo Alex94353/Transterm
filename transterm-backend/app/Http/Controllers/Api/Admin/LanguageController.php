@@ -15,7 +15,13 @@ class LanguageController extends Controller
     {
         $this->authorize('viewAny', Language::class);
 
-        $query = Language::query();
+        $query = Language::query()
+            ->withCount([
+                'sourcePairs',
+                'targetPairs',
+                'glossaryTranslations',
+                'termTranslations',
+            ]);
 
         if ($request->filled('id')) {
             $query->where('id', $request->integer('id'));
@@ -70,6 +76,13 @@ class LanguageController extends Controller
     {
         $this->authorize('view', $language);
 
+        $language->loadCount([
+            'sourcePairs',
+            'targetPairs',
+            'glossaryTranslations',
+            'termTranslations',
+        ]);
+
         return new LanguageResource($language);
     }
 
@@ -115,6 +128,29 @@ class LanguageController extends Controller
     public function destroy(Language $language): JsonResponse
     {
         $this->authorize('delete', $language);
+
+        $language->loadCount([
+            'sourcePairs',
+            'targetPairs',
+            'glossaryTranslations',
+            'termTranslations',
+        ]);
+
+        $sourcePairsCount = (int) ($language->source_pairs_count ?? 0);
+        $targetPairsCount = (int) ($language->target_pairs_count ?? 0);
+        $glossaryTranslationsCount = (int) ($language->glossary_translations_count ?? 0);
+        $termTranslationsCount = (int) ($language->term_translations_count ?? 0);
+
+        if (
+            $sourcePairsCount > 0 ||
+            $targetPairsCount > 0 ||
+            $glossaryTranslationsCount > 0 ||
+            $termTranslationsCount > 0
+        ) {
+            return response()->json([
+                'message' => "Cannot delete language in use (source pairs: {$sourcePairsCount}, target pairs: {$targetPairsCount}, glossary translations: {$glossaryTranslationsCount}, term translations: {$termTranslationsCount}).",
+            ], 422);
+        }
 
         $language->delete();
 
