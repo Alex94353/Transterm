@@ -181,7 +181,7 @@ const handleRegister = async () => {
     })
 
     if (result?.requiresActivation) {
-      ElMessage.warning('Account created. Please wait for activation by administrator.')
+      ElMessage.warning('Account created. Check your email and confirm activation link.')
       router.push('/login')
       return
     }

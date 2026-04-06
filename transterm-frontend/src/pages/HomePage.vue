@@ -22,11 +22,11 @@
               Browse Glossaries
             </el-button>
             <el-button
-              v-if="authStore.isEditor && authStore.canAccessManagement"
+              v-if="authStore.canAccessManagement"
               type="warning"
               plain
               size="large"
-              @click="$router.push('/admin')"
+              @click="$router.push('/editor')"
             >
               Management
             </el-button>

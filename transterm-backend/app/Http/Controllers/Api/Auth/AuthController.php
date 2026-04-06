@@ -5,7 +5,9 @@ namespace App\Http\Controllers\Api\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Closure;
+use Illuminate\Auth\Events\Verified;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
@@ -43,15 +45,64 @@ class AuthController extends Controller
             'password' => Hash::make($validated['password']),
         ]);
 
-        $token = $user->createToken('auth_token')->plainTextToken;
+        $user->sendEmailVerificationNotification();
 
         return response()->json([
-            'message' => 'User registered successfully.',
-            'access_token' => $token,
-            'token_type' => 'Bearer',
+            'message' => 'Registration successful. Please verify your email to activate your account.',
             'user' => $user,
+            'verification_email_sent' => true,
             'can_access_management' => $this->canAccessManagement($user),
         ], 201);
+    }
+
+    public function resendVerificationEmail(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'email' => ['required', 'string', 'email', 'max:255'],
+        ]);
+
+        $normalizedEmail = mb_strtolower(trim((string) $validated['email']));
+
+        $user = User::query()
+            ->where('email', $normalizedEmail)
+            ->first();
+
+        if ($user && (! $user->hasVerifiedEmail() || ! $user->activated)) {
+            $user->sendEmailVerificationNotification();
+        }
+
+        return response()->json([
+            'message' => 'If the account exists and is not activated, a verification email has been sent.',
+        ]);
+    }
+
+    public function verifyEmail(Request $request, string $id, string $hash): JsonResponse|RedirectResponse
+    {
+        $user = User::query()->find($id);
+
+        if (! $user || ! hash_equals((string) $hash, sha1((string) $user->getEmailForVerification()))) {
+            return $this->verificationResponse($request, 'invalid');
+        }
+
+        $emailVerifiedNow = false;
+        $activatedNow = false;
+
+        if (! $user->hasVerifiedEmail()) {
+            $emailVerifiedNow = $user->markEmailAsVerified();
+        }
+
+        if (! $user->activated) {
+            $user->forceFill(['activated' => true])->save();
+            $activatedNow = true;
+        }
+
+        if ($emailVerifiedNow) {
+            event(new Verified($user));
+        }
+
+        $status = ($emailVerifiedNow || $activatedNow) ? 'success' : 'already';
+
+        return $this->verificationResponse($request, $status);
     }
 
     private function isAllowedAcademicEmail(string $email): bool
@@ -69,9 +120,12 @@ class AuthController extends Controller
             'password' => ['required', 'string'],
         ]);
 
+        $loginInput = trim((string) $validated['login']);
+        $normalizedLogin = mb_strtolower($loginInput);
+
         $user = User::query()
-            ->where('email', $validated['login'])
-            ->orWhere('username', $validated['login'])
+            ->whereRaw('LOWER(email) = ?', [$normalizedLogin])
+            ->orWhere('username', $loginInput)
             ->first();
 
         if (! $user || ! Hash::check($validated['password'], $user->password)) {
@@ -94,7 +148,7 @@ class AuthController extends Controller
 
         // Allow institutional accounts for student/teacher access.
         // Keep existing admin accounts operable even if they use a local domain.
-        if (! $this->isAllowedAcademicEmail((string) $user->email) && ! $user->hasRole('Admin')) {
+        if (! $this->isAllowedAcademicEmail((string) $user->email) && ! $user->can('admin.access')) {
             throw ValidationException::withMessages([
                 'login' => ['Only @student.ukf.sk and @ukf.sk accounts can sign in.'],
             ]);
@@ -136,8 +190,40 @@ class AuthController extends Controller
 
     private function canAccessManagement(User $user): bool
     {
-        return $user->hasRole('Admin')
-            || $user->hasRole('Editor')
-            || $user->can('admin.access');
+        return $user->can('admin.access')
+            || $user->can('editor.access');
+    }
+
+    private function verificationResponse(Request $request, string $status): JsonResponse|RedirectResponse
+    {
+        $messages = [
+            'success' => 'Your account has been successfully activated.',
+            'already' => 'Your account is already activated.',
+            'invalid' => 'The verification link is invalid or has expired.',
+        ];
+
+        $message = $messages[$status] ?? $messages['invalid'];
+
+        if ($request->expectsJson()) {
+            return response()->json(
+                [
+                    'message' => $message,
+                    'status' => $status,
+                ],
+                $status === 'invalid' ? 422 : 200
+            );
+        }
+
+        $target = $this->buildFrontendVerificationUrl($status);
+
+        return redirect()->away($target);
+    }
+
+    private function buildFrontendVerificationUrl(string $status): string
+    {
+        $frontendBaseUrl = rtrim((string) config('app.frontend_url', config('app.url')), '/');
+        $query = http_build_query(['verification' => $status]);
+
+        return "{$frontendBaseUrl}/login?{$query}";
     }
 }

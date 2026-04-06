@@ -64,52 +64,66 @@ const routes = [
     meta: { title: 'Profile', requiresAuth: true },
   },
   {
-    path: '/admin',
+    path: '/admin/:pathMatch(.*)*',
+    redirect: (to) => {
+      const pathMatch = Array.isArray(to.params.pathMatch)
+        ? to.params.pathMatch.join('/')
+        : String(to.params.pathMatch || '')
+
+      return {
+        path: pathMatch ? `/editor/${pathMatch}` : '/editor',
+        query: to.query,
+        hash: to.hash,
+      }
+    },
+  },
+  {
+    path: '/editor',
     component: AdminDashboard,
-    meta: { title: 'Admin Dashboard', requiresManagement: true },
+    meta: { title: 'Editor Dashboard', requiresManagement: true },
   },
   {
-    path: '/admin/glossaries',
+    path: '/editor/glossaries',
     component: AdminGlossaries,
-    meta: { title: 'Admin Glossaries', requiresManagement: true },
+    meta: { title: 'Editor Glossaries', requiresManagement: true },
   },
   {
-    path: '/admin/terms',
+    path: '/editor/terms',
     component: AdminTerms,
-    meta: { title: 'Admin Terms', requiresManagement: true },
+    meta: { title: 'Editor Terms', requiresManagement: true },
   },
   {
-    path: '/admin/users',
+    path: '/editor/users',
     component: AdminUsers,
     meta: { title: 'Admin Users', requiresAdmin: true },
   },
   {
-    path: '/admin/editor-role-requests',
+    path: '/editor/editor-role-requests',
     component: AdminEditorRoleRequests,
     meta: { title: 'Editor Role Requests', requiresAdmin: true },
   },
   {
-    path: '/admin/languages',
+    path: '/editor/languages',
     component: AdminLanguages,
     meta: { title: 'Admin Languages', requiresAdmin: true },
   },
   {
-    path: '/admin/references',
+    path: '/editor/references',
     component: AdminReferences,
     meta: { title: 'Admin References', requiresAdmin: true },
   },
   {
-    path: '/admin/fields',
+    path: '/editor/fields',
     component: AdminFields,
     meta: { title: 'Admin Fields', requiresAdmin: true },
   },
   {
-    path: '/admin/field-groups',
+    path: '/editor/field-groups',
     component: AdminFieldGroups,
     meta: { title: 'Admin Field Groups', requiresAdmin: true },
   },
   {
-    path: '/admin/comments',
+    path: '/editor/comments',
     component: AdminComments,
     meta: { title: 'Admin Comments', requiresAdmin: true },
   },

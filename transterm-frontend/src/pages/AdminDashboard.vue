@@ -1,5 +1,5 @@
 <template>
-  <admin-page-shell title="Admin Dashboard" :show-back="false">
+  <admin-page-shell :title="dashboardTitle" :show-back="false">
 
     <el-row :gutter="20" style="margin-bottom: 30px">
         <el-col v-if="authStore.isAdmin" :xs="24" :sm="12" :md="6">
@@ -53,7 +53,7 @@
     <h3>Management</h3>
     <el-row :gutter="20">
         <el-col :xs="24" :sm="12" :md="8">
-          <el-card class="admin-menu-card" @click="$router.push('/admin/glossaries')">
+          <el-card class="admin-menu-card" @click="$router.push('/editor/glossaries')">
             <template #header>
               <el-icon><document-copy /></el-icon>
               Glossaries
@@ -63,7 +63,7 @@
         </el-col>
 
         <el-col :xs="24" :sm="12" :md="8">
-          <el-card class="admin-menu-card" @click="$router.push('/admin/terms')">
+          <el-card class="admin-menu-card" @click="$router.push('/editor/terms')">
             <template #header>
               <el-icon><menu-icon /></el-icon>
               Terms
@@ -73,7 +73,7 @@
         </el-col>
 
         <el-col v-if="authStore.isAdmin" :xs="24" :sm="12" :md="8">
-          <el-card class="admin-menu-card" @click="$router.push('/admin/users')">
+          <el-card class="admin-menu-card" @click="$router.push('/editor/users')">
             <template #header>
               <el-icon><user /></el-icon>
               Users
@@ -83,7 +83,7 @@
         </el-col>
 
         <el-col v-if="authStore.isAdmin" :xs="24" :sm="12" :md="8">
-          <el-card class="admin-menu-card" @click="$router.push('/admin/editor-role-requests')">
+          <el-card class="admin-menu-card" @click="$router.push('/editor/editor-role-requests')">
             <template #header>
               <el-icon><bell /></el-icon>
               Editor Requests
@@ -98,7 +98,7 @@
         </el-col>
 
         <el-col v-if="authStore.isAdmin" :xs="24" :sm="12" :md="8">
-          <el-card class="admin-menu-card" @click="$router.push('/admin/languages')">
+          <el-card class="admin-menu-card" @click="$router.push('/editor/languages')">
             <template #header>
               <el-icon><connection /></el-icon>
               Languages
@@ -108,7 +108,7 @@
         </el-col>
 
         <el-col v-if="authStore.isAdmin" :xs="24" :sm="12" :md="8">
-          <el-card class="admin-menu-card" @click="$router.push('/admin/fields')">
+          <el-card class="admin-menu-card" @click="$router.push('/editor/fields')">
             <template #header>
               <el-icon><collection-tag /></el-icon>
               Fields
@@ -118,7 +118,7 @@
         </el-col>
 
         <el-col v-if="authStore.isAdmin" :xs="24" :sm="12" :md="8">
-          <el-card class="admin-menu-card" @click="$router.push('/admin/field-groups')">
+          <el-card class="admin-menu-card" @click="$router.push('/editor/field-groups')">
             <template #header>
               <el-icon><folder-opened /></el-icon>
               Field Groups
@@ -128,7 +128,7 @@
         </el-col>
 
         <el-col v-if="authStore.isAdmin" :xs="24" :sm="12" :md="8">
-          <el-card class="admin-menu-card" @click="$router.push('/admin/references')">
+          <el-card class="admin-menu-card" @click="$router.push('/editor/references')">
             <template #header>
               <el-icon><link-icon /></el-icon>
               References
@@ -138,7 +138,7 @@
         </el-col>
 
         <el-col v-if="authStore.isAdmin" :xs="24" :sm="12" :md="8">
-          <el-card class="admin-menu-card" @click="$router.push('/admin/comments')">
+          <el-card class="admin-menu-card" @click="$router.push('/editor/comments')">
             <template #header>
               <el-icon><chat-dot-round /></el-icon>
               Comments
@@ -151,7 +151,7 @@
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { ElMessage, ElNotification } from 'element-plus'
 import AdminPageShell from '../components/Admin/AdminPageShell.vue'
 import adminService from '../services/adminService'
@@ -170,6 +170,7 @@ import {
 } from '@element-plus/icons-vue'
 
 const authStore = useAuthStore()
+const dashboardTitle = computed(() => (authStore.isAdmin ? 'Admin Dashboard' : 'Editor Dashboard'))
 const stats = ref({
   users: 0,
   glossaries: 0,

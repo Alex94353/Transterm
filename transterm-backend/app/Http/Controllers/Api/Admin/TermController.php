@@ -345,8 +345,7 @@ class TermController extends Controller
             return false;
         }
 
-        return $user->hasRole('Editor')
-            && ! $user->hasRole('Admin')
+        return $user->can('editor.access')
             && ! $user->can('admin.access');
     }
 }

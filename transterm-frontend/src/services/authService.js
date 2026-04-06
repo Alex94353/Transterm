@@ -5,6 +5,8 @@ export const authService = {
 
   login: (data) => api.post('/auth/login', data),
 
+  resendVerificationEmail: (data) => api.post('/auth/email/verification-notification', data),
+
   logout: () => api.post('/auth/logout'),
 
   getMe: () => api.get('/auth/me'),

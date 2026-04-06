@@ -8,18 +8,18 @@ export const adminService = {
   deleteComment: (id) => api.delete(`/admin/comments/${id}`),
 
   // Glossaries
-  adminGetGlossaries: (params, requestConfig = {}) => api.get('/admin/glossaries', { params, ...requestConfig }),
-  getGlossary: (id, requestConfig = {}) => api.get(`/admin/glossaries/${id}`, requestConfig),
-  createGlossary: (data) => api.post('/admin/glossaries', data),
-  updateGlossary: (id, data) => api.put(`/admin/glossaries/${id}`, data),
-  deleteGlossary: (id) => api.delete(`/admin/glossaries/${id}`),
+  adminGetGlossaries: (params, requestConfig = {}) => api.get('/editor/glossaries', { params, ...requestConfig }),
+  getGlossary: (id, requestConfig = {}) => api.get(`/editor/glossaries/${id}`, requestConfig),
+  createGlossary: (data) => api.post('/editor/glossaries', data),
+  updateGlossary: (id, data) => api.put(`/editor/glossaries/${id}`, data),
+  deleteGlossary: (id) => api.delete(`/editor/glossaries/${id}`),
 
   // Terms
-  adminGetTerms: (params, requestConfig = {}) => api.get('/admin/terms', { params, ...requestConfig }),
-  getTerm: (id, requestConfig = {}) => api.get(`/admin/terms/${id}`, requestConfig),
-  createTerm: (data) => api.post('/admin/terms', data),
-  updateTerm: (id, data) => api.put(`/admin/terms/${id}`, data),
-  deleteTerm: (id) => api.delete(`/admin/terms/${id}`),
+  adminGetTerms: (params, requestConfig = {}) => api.get('/editor/terms', { params, ...requestConfig }),
+  getTerm: (id, requestConfig = {}) => api.get(`/editor/terms/${id}`, requestConfig),
+  createTerm: (data) => api.post('/editor/terms', data),
+  updateTerm: (id, data) => api.put(`/editor/terms/${id}`, data),
+  deleteTerm: (id) => api.delete(`/editor/terms/${id}`),
 
   // References
   getReferences: (params, requestConfig = {}) => api.get('/admin/references', { params, ...requestConfig }),
@@ -29,8 +29,8 @@ export const adminService = {
   deleteReference: (id) => api.delete(`/admin/references/${id}`),
 
   // Fields
-  getFields: (params, requestConfig = {}) => api.get('/admin/fields', { params, ...requestConfig }),
-  getField: (id, requestConfig = {}) => api.get(`/admin/fields/${id}`, requestConfig),
+  getFields: (params, requestConfig = {}) => api.get('/editor/fields', { params, ...requestConfig }),
+  getField: (id, requestConfig = {}) => api.get(`/editor/fields/${id}`, requestConfig),
   createField: (data) => api.post('/admin/fields', data),
   updateField: (id, data) => api.put(`/admin/fields/${id}`, data),
   deleteField: (id) => api.delete(`/admin/fields/${id}`),
@@ -50,8 +50,8 @@ export const adminService = {
   deleteLanguage: (id) => api.delete(`/admin/languages/${id}`),
 
   // Language Pairs
-  getLanguagePairs: (params, requestConfig = {}) => api.get('/admin/language-pairs', { params, ...requestConfig }),
-  getLanguagePair: (id, requestConfig = {}) => api.get(`/admin/language-pairs/${id}`, requestConfig),
+  getLanguagePairs: (params, requestConfig = {}) => api.get('/editor/language-pairs', { params, ...requestConfig }),
+  getLanguagePair: (id, requestConfig = {}) => api.get(`/editor/language-pairs/${id}`, requestConfig),
   createLanguagePair: (data) => api.post('/admin/language-pairs', data),
   updateLanguagePair: (id, data) => api.put(`/admin/language-pairs/${id}`, data),
   deleteLanguagePair: (id) => api.delete(`/admin/language-pairs/${id}`),

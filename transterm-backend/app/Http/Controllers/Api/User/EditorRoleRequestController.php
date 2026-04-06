@@ -25,7 +25,7 @@ class EditorRoleRequestController extends Controller
     {
         $user = $request->user();
 
-        if ($user->hasRole('Admin') || $user->hasRole('Editor') || $user->can('admin.access')) {
+        if ($user->can('admin.access') || $user->can('editor.access')) {
             return response()->json([
                 'message' => 'Your account already has management access.',
             ], 422);
@@ -67,4 +67,3 @@ class EditorRoleRequestController extends Controller
         ], 201);
     }
 }
-

@@ -70,7 +70,7 @@ export const useAuthStore = defineStore('auth', () => {
       syncManagementAccess(response.data)
 
       // Newly created accounts can be inactive on backend.
-      // In that case protected endpoints return 403, so we keep user as guest.
+      // Inactive accounts must verify email first, so we keep user as guest.
       if (registeredUser && registeredUser.activated === false) {
         token.value = null
         user.value = null
@@ -100,6 +100,22 @@ export const useAuthStore = defineStore('auth', () => {
       return response.data
     } catch (err) {
       error.value = extractErrorMessage(err, 'Registration failed')
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function resendVerificationEmail(email) {
+    loading.value = true
+    error.value = null
+    try {
+      const response = await authService.resendVerificationEmail({
+        email: String(email || '').trim().toLowerCase(),
+      })
+      return response.data
+    } catch (err) {
+      error.value = extractErrorMessage(err, 'Failed to resend verification email')
       throw err
     } finally {
       loading.value = false
@@ -179,6 +195,7 @@ export const useAuthStore = defineStore('auth', () => {
     isEditor,
     canAccessManagement,
     register,
+    resendVerificationEmail,
     login,
     logout,
     getCurrentUser,

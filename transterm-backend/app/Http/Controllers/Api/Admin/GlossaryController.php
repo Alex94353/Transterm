@@ -154,6 +154,8 @@ class GlossaryController extends Controller
     {
         $this->authorize('create', Glossary::class);
 
+        $isEditorOnly = $this->shouldScopeToOwner($request->user());
+
         $validated = $request->validate([
             'language_pair_id' => ['required', 'integer', 'exists:language_pairs,id'],
             'field_id' => ['required', 'integer', 'exists:fields,id'],
@@ -164,11 +166,15 @@ class GlossaryController extends Controller
             'description' => ['nullable', 'string'],
         ]);
 
+        if ($isEditorOnly) {
+            unset($validated['approved']);
+        }
+
         $glossary = Glossary::create([
             'language_pair_id' => $validated['language_pair_id'],
             'field_id' => $validated['field_id'],
             'owner_id' => $request->user()->id,
-            'approved' => $validated['approved'] ?? false,
+            'approved' => $isEditorOnly ? false : ($validated['approved'] ?? false),
             'is_public' => $validated['is_public'] ?? false,
         ]);
 
@@ -201,6 +207,8 @@ class GlossaryController extends Controller
     {
         $this->authorize('update', $glossary);
 
+        $isEditorOnly = $this->shouldScopeToOwner($request->user());
+
         $validated = $request->validate([
             'language_pair_id' => ['sometimes', 'integer', 'exists:language_pairs,id'],
             'field_id' => ['sometimes', 'integer', 'exists:fields,id'],
@@ -210,6 +218,10 @@ class GlossaryController extends Controller
             'title' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
         ]);
+
+        if ($isEditorOnly) {
+            unset($validated['approved']);
+        }
 
         $glossaryData = $validated;
         unset($glossaryData['translation_language_id'], $glossaryData['title'], $glossaryData['description']);
@@ -318,8 +330,7 @@ class GlossaryController extends Controller
             return false;
         }
 
-        return $user->hasRole('Editor')
-            && ! $user->hasRole('Admin')
+        return $user->can('editor.access')
             && ! $user->can('admin.access');
     }
 }

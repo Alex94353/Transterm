@@ -30,6 +30,7 @@
           @change="handleFiltersChange"
         />
         <admin-filter-select
+          v-if="canManageApproval"
           v-model="filters.approved"
           width="130px"
           :options="approvedFilterOptions"
@@ -165,7 +166,7 @@
             placeholder="Glossary description"
           />
         </el-form-item>
-        <el-form-item label="Approved">
+        <el-form-item v-if="canManageApproval" label="Approved">
           <el-switch v-model="formData.approved" />
         </el-form-item>
         <el-form-item label="Public">
@@ -197,10 +198,13 @@ import AdminToolbar from '../../components/Admin/AdminToolbar.vue'
 import { useAdminList } from '../../composables/useAdminList'
 import { isRequestCanceled } from '../../services/api'
 import adminService from '../../services/adminService'
+import { useAuthStore } from '../../stores/auth'
 
 const glossaries = ref([])
 const languagePairs = ref([])
 const fields = ref([])
+const authStore = useAuthStore()
+const canManageApproval = computed(() => authStore.isAdmin)
 const approvedFilterOptions = [
   { label: 'All', value: 'all' },
   { label: 'Approved', value: 'approved' },
@@ -277,10 +281,12 @@ const fetchGlossaries = async () => {
       params.field_id = filters.fieldId
     }
 
-    if (filters.approved === 'approved') {
-      params.approved = true
-    } else if (filters.approved === 'pending') {
-      params.approved = false
+    if (canManageApproval.value) {
+      if (filters.approved === 'approved') {
+        params.approved = true
+      } else if (filters.approved === 'pending') {
+        params.approved = false
+      }
     }
 
     if (filters.isPublic === 'public') {
@@ -373,7 +379,7 @@ const handleEdit = (glossary) => {
   formData.translation_language_id = primaryTranslation?.language_id
     || getSourceLanguageIdByPairId(glossary.language_pair?.id)
     || null
-  formData.approved = !!glossary.approved
+  formData.approved = canManageApproval.value ? !!glossary.approved : false
   formData.is_public = !!glossary.is_public
   dialogVisible.value = true
 }
@@ -396,8 +402,11 @@ const handleSave = async () => {
       title: normalizedTitle,
       description: formData.description?.trim() || null,
       translation_language_id: translationLanguageId || undefined,
-      approved: formData.approved,
       is_public: formData.is_public,
+    }
+
+    if (canManageApproval.value) {
+      payload.approved = formData.approved
     }
 
     if (isEditMode.value) {

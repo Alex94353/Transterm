@@ -9,7 +9,7 @@ trait HandlesPolicyPermissions
 {
     protected function allowByRoleOrPermission(User $user, string $resource, string $ability): ?bool
     {
-        if ($user->hasRole('Admin')) {
+        if ($user->can('admin.access')) {
             return true;
         }
 

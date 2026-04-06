@@ -18,6 +18,8 @@ class PermissionSeeder extends Seeder
 
         $permissionNames = [
             'admin.access',
+            'editor.access',
+            'editor.assess',
 
             'field.view-any',
             'field.view',
@@ -79,6 +81,9 @@ class PermissionSeeder extends Seeder
 
         $rolePermissions = [
             'Admin' => $permissionNames,
+            'Editor' => [
+                'editor.access',
+            ],
             'User' => [
                 'comment.update',
                 'comment.delete',

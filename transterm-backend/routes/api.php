@@ -30,6 +30,12 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('auth')->group(function () {
     Route::post('/register', [AuthController::class, 'register']);
     Route::post('/login', [AuthController::class, 'login']);
+    Route::post('/email/verification-notification', [AuthController::class, 'resendVerificationEmail'])
+        ->middleware('throttle:6,1')
+        ->name('verification.send');
+    Route::get('/email/verify/{id}/{hash}', [AuthController::class, 'verifyEmail'])
+        ->middleware(['signed', 'throttle:6,1'])
+        ->name('verification.verify');
 
     Route::middleware(['auth:sanctum', 'active.user', 'not.banned'])->group(function () {
         Route::post('/logout', [AuthController::class, 'logout']);
@@ -53,7 +59,7 @@ Route::middleware(['auth:sanctum', 'active.user', 'not.banned'])->group(function
     Route::post('/terms/{term}/comments', [CommentController::class, 'store']);
 });
 
-Route::middleware(['auth:sanctum', 'active.user', 'not.banned', 'role_or_permission:Admin|Editor|admin.access'])->prefix('admin')->group(function () {
+Route::middleware(['auth:sanctum', 'active.user', 'not.banned', 'permission:editor.access|admin.access'])->prefix('editor')->group(function () {
     Route::get('/terms', [AdminTermController::class, 'index']);
     Route::get('/terms/{term}', [AdminTermController::class, 'show']);
     Route::post('/terms', [AdminTermController::class, 'store']);

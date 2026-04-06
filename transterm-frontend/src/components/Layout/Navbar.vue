@@ -23,8 +23,8 @@
             <router-link to="/my-comments">My Comments</router-link>
           </el-menu-item>
 
-          <el-menu-item v-if="authStore.canAccessManagement" index="/admin">
-            <router-link to="/admin">Admin</router-link>
+          <el-menu-item v-if="authStore.canAccessManagement" index="/editor">
+            <router-link to="/editor">{{ managementLabel }}</router-link>
           </el-menu-item>
 
           <el-sub-menu v-if="authStore.isAuthenticated" index="user">
@@ -89,7 +89,25 @@ onBeforeMount(() => {
 })
 
 const activeMenu = computed(() => {
-  return router.currentRoute.value.path
+  const path = router.currentRoute.value.path
+
+  if (path.startsWith('/editor')) {
+    return '/editor'
+  }
+
+  if (path.startsWith('/glossaries')) {
+    return '/glossaries'
+  }
+
+  return path
+})
+
+const managementLabel = computed(() => {
+  if (authStore.isAdmin) {
+    return 'Admin'
+  }
+
+  return 'Editor'
 })
 
 const handleMenuSelect = (key) => {

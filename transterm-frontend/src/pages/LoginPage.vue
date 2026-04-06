@@ -15,6 +15,15 @@
         @submit.prevent="handleLogin"
         label-width="100px"
       >
+        <el-form-item v-if="verificationMessage">
+          <el-alert
+            :title="verificationMessage"
+            :type="verificationType"
+            :closable="false"
+            show-icon
+          />
+        </el-form-item>
+
         <el-form-item label="Login" prop="login">
           <el-input
             v-model="formData.login"
@@ -54,6 +63,17 @@
           </span>
         </el-form-item>
 
+        <el-form-item>
+          <el-button
+            type="info"
+            text
+            @click="handleResendVerificationEmail"
+            :loading="authStore.loading"
+          >
+            Resend activation email
+          </el-button>
+        </el-form-item>
+
         <el-alert
           v-if="authStore.error"
           :title="authStore.error"
@@ -67,19 +87,48 @@
 </template>
 
 <script setup>
-import { reactive, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, reactive, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { ElMessage } from 'element-plus'
 import MainLayout from '../components/Layout/MainLayout.vue'
 
 const router = useRouter()
+const route = useRoute()
 const authStore = useAuthStore()
 const form = ref()
 
 const formData = reactive({
   login: '',
   password: '',
+})
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+const verificationStatus = computed(() => String(route.query.verification || '').toLowerCase())
+
+const verificationMessage = computed(() => {
+  if (verificationStatus.value === 'success') {
+    return 'Email confirmed. Your account is activated, you can sign in now.'
+  }
+
+  if (verificationStatus.value === 'already') {
+    return 'This account is already activated. You can sign in.'
+  }
+
+  if (verificationStatus.value === 'invalid') {
+    return 'Verification link is invalid or expired. Request a new activation email.'
+  }
+
+  return ''
+})
+
+const verificationType = computed(() => {
+  if (verificationStatus.value === 'invalid') {
+    return 'warning'
+  }
+
+  return 'success'
 })
 
 const rules = {
@@ -102,6 +151,22 @@ const handleLogin = async () => {
     router.push('/')
   } catch {
     ElMessage.error(authStore.error || 'Login failed')
+  }
+}
+
+const handleResendVerificationEmail = async () => {
+  const email = formData.login.trim().toLowerCase()
+
+  if (!EMAIL_REGEX.test(email)) {
+    ElMessage.warning('Enter your email in Login field to resend activation email.')
+    return
+  }
+
+  try {
+    await authStore.resendVerificationEmail(email)
+    ElMessage.success('If the account exists and is not activated, verification email has been sent.')
+  } catch {
+    ElMessage.error(authStore.error || 'Failed to resend verification email')
   }
 }
 </script>
