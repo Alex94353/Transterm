@@ -7,6 +7,11 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    private function shouldSkipForCurrentDriver(): bool
+    {
+        return DB::getDriverName() !== 'mysql';
+    }
+
     private function constraintExists(string $table, string $constraint): bool
     {
         return DB::table('information_schema.TABLE_CONSTRAINTS')
@@ -78,6 +83,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if ($this->shouldSkipForCurrentDriver()) {
+            return;
+        }
+
         $this->dropForeignIfExists('comments', 'user_id');
 
         if (! $this->columnIsNullable('comments', 'user_id')) {
@@ -92,6 +101,10 @@ return new class extends Migration
      */
     public function down(): void
     {
+        if ($this->shouldSkipForCurrentDriver()) {
+            return;
+        }
+
         $this->dropForeignIfExists('comments', 'user_id');
         $this->addCascadeForeignIfMissing('comments', 'user_id', 'users');
 
@@ -103,4 +116,3 @@ return new class extends Migration
         }
     }
 };
-

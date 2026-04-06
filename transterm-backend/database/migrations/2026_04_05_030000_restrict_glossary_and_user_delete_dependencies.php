@@ -7,6 +7,11 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    private function shouldSkipForCurrentDriver(): bool
+    {
+        return DB::getDriverName() !== 'mysql';
+    }
+
     private function constraintExists(string $table, string $constraint): bool
     {
         return DB::table('information_schema.TABLE_CONSTRAINTS')
@@ -66,6 +71,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if ($this->shouldSkipForCurrentDriver()) {
+            return;
+        }
+
         $this->dropForeignIfExists('terms', 'glossary_id');
         $this->addRestrictForeignIfMissing('terms', 'glossary_id', 'glossaries');
 
@@ -81,6 +90,10 @@ return new class extends Migration
      */
     public function down(): void
     {
+        if ($this->shouldSkipForCurrentDriver()) {
+            return;
+        }
+
         $this->dropForeignIfExists('terms', 'created_by');
         $this->addCascadeForeignIfMissing('terms', 'created_by', 'users');
 
@@ -91,4 +104,3 @@ return new class extends Migration
         $this->addCascadeForeignIfMissing('terms', 'glossary_id', 'glossaries');
     }
 };
-
