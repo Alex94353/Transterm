@@ -234,6 +234,7 @@ import AdminTableActions from '../../components/Admin/AdminTableActions.vue'
 import AdminToolbar from '../../components/Admin/AdminToolbar.vue'
 import { isRequestCanceled } from '../../services/api'
 import adminService from '../../services/adminService'
+import { getSafeDeleteErrorMessage } from '../../services/errorMessages'
 
 const activeTab = ref('languages')
 
@@ -527,7 +528,7 @@ const deleteLanguage = async (id) => {
     fetchLanguages()
     fetchLanguageOptions()
   } catch (err) {
-    ElMessage.error(err.response?.data?.message || 'Failed to delete language')
+    ElMessage.error(getSafeDeleteErrorMessage(err, 'language'))
   }
 }
 
@@ -579,7 +580,7 @@ const deletePair = async (id) => {
     ElMessage.success('Language pair deleted successfully')
     fetchLanguagePairs()
   } catch (err) {
-    ElMessage.error(err.response?.data?.message || 'Failed to delete language pair')
+    ElMessage.error(getSafeDeleteErrorMessage(err, 'language pair'))
   }
 }
 </script>

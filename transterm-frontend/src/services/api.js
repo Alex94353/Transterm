@@ -1,6 +1,45 @@
 import axios from 'axios'
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || '/api'
+function resolveApiBaseUrl() {
+  const raw = (import.meta.env.VITE_API_URL || '/api').trim()
+  const normalized = raw.replace(/\/+$/, '') || '/api'
+
+  if (!import.meta.env.PROD) {
+    return normalized
+  }
+
+  if (normalized === '/api') {
+    return normalized
+  }
+
+  try {
+    const parsed = new URL(normalized)
+    const isLocalhost =
+      parsed.hostname === 'localhost' ||
+      parsed.hostname === '127.0.0.1' ||
+      parsed.hostname === '::1'
+
+    if (isLocalhost) {
+      return '/api'
+    }
+
+    if (parsed.protocol !== 'https:') {
+      throw new Error('VITE_API_URL must use HTTPS in production')
+    }
+
+    if (!parsed.pathname.endsWith('/api')) {
+      throw new Error('VITE_API_URL should end with /api in production')
+    }
+  } catch {
+    throw new Error(
+      `[Transterm] Invalid VITE_API_URL "${raw}". Use "/api" or an absolute HTTPS URL ending with "/api".`
+    )
+  }
+
+  return normalized
+}
+
+const API_BASE_URL = resolveApiBaseUrl()
 const pendingByCancelKey = new Map()
 
 export function isRequestCanceled(error) {

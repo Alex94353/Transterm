@@ -128,6 +128,7 @@ import AdminToolbar from '../../components/Admin/AdminToolbar.vue'
 import { useAdminList } from '../../composables/useAdminList'
 import { isRequestCanceled } from '../../services/api'
 import adminService from '../../services/adminService'
+import { getSafeDeleteErrorMessage } from '../../services/errorMessages'
 
 const fields = ref([])
 const fieldGroups = ref([])
@@ -287,7 +288,7 @@ const handleDelete = async (id) => {
     ElMessage.success('Field deleted successfully')
     fetchFields()
   } catch (err) {
-    ElMessage.error(err.response?.data?.message || 'Failed to delete field')
+    ElMessage.error(getSafeDeleteErrorMessage(err, 'field'))
   }
 }
 
