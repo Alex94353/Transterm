@@ -129,4 +129,42 @@ describe('router', () => {
 
     expect(document.title).toBe('Login - Transterm')
   })
+
+  it(
+    'loads major public, user, and management routes for smoke coverage',
+    async () => {
+      const { router } = await createRouterWithAuthState({
+        isAuthenticated: true,
+        isAdmin: true,
+        canAccessManagement: true,
+        token: 'admin-token',
+        user: { id: 1, name: 'Admin' },
+      })
+
+      const routesToVisit = [
+        '/editor',
+        '/editor/glossaries',
+        '/editor/terms',
+        '/editor/users',
+        '/editor/editor-role-requests',
+        '/editor/languages',
+        '/editor/references',
+        '/editor/fields',
+        '/editor/field-groups',
+        '/editor/comments',
+        '/glossaries/1',
+        '/terms/1',
+        '/my-comments',
+        '/profile',
+      ]
+
+      for (const route of routesToVisit) {
+        await router.push(route)
+      }
+
+      expect(router.currentRoute.value.path).toBe('/profile')
+      expect(router.getRoutes().length).toBeGreaterThan(10)
+    },
+    30000
+  )
 })
