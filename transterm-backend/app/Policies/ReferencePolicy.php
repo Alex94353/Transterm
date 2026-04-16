@@ -12,7 +12,7 @@ class ReferencePolicy
 
     public function before(User $user, string $ability): ?bool
     {
-        return $this->allowByRoleOrPermission($user, 'reference', $ability);
+        return $this->allowAdminBypass($user);
     }
 
     public function viewAny(?User $user): bool
@@ -27,16 +27,18 @@ class ReferencePolicy
 
     public function create(User $user): bool
     {
-        return true;
+        return $this->hasPermission($user, 'reference.create');
     }
 
     public function update(User $user, Reference $reference): bool
     {
-        return (int) $user->id === (int) $reference->user_id;
+        return $this->hasPermission($user, 'reference.update')
+            && (int) $user->id === (int) $reference->user_id;
     }
 
     public function delete(User $user, Reference $reference): bool
     {
-        return (int) $user->id === (int) $reference->user_id;
+        return $this->hasPermission($user, 'reference.delete')
+            && (int) $user->id === (int) $reference->user_id;
     }
 }

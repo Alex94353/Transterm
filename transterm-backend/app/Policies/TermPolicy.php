@@ -12,7 +12,7 @@ class TermPolicy
 
     public function before(User $user, string $ability): ?bool
     {
-        return $this->allowByRoleOrPermission($user, 'term', $ability);
+        return $this->allowAdminBypass($user);
     }
 
     public function viewAny(?User $user): bool
@@ -33,16 +33,18 @@ class TermPolicy
 
     public function create(User $user): bool
     {
-        return true;
+        return $this->hasPermission($user, 'term.create');
     }
 
     public function update(User $user, Term $term): bool
     {
-        return (int) $user->id === (int) $term->created_by;
+        return $this->hasPermission($user, 'term.update')
+            && (int) $user->id === (int) $term->created_by;
     }
 
     public function delete(User $user, Term $term): bool
     {
-        return (int) $user->id === (int) $term->created_by;
+        return $this->hasPermission($user, 'term.delete')
+            && (int) $user->id === (int) $term->created_by;
     }
 }

@@ -3,29 +3,16 @@
 namespace App\Policies\Concerns;
 
 use App\Models\User;
-use Illuminate\Support\Str;
 
 trait HandlesPolicyPermissions
 {
-    protected function allowByRoleOrPermission(User $user, string $resource, string $ability): ?bool
+    protected function allowAdminBypass(User $user): ?bool
     {
-        if ($user->can('admin.access')) {
-            return true;
-        }
+        return $user->can('admin.access') ? true : null;
+    }
 
-        $candidatePermissions = [
-            Str::kebab($resource) . '.' . Str::kebab($ability),
-            Str::snake($resource) . '.' . Str::snake($ability),
-        ];
-
-        $userPermissions = $user->getAllPermissions()->pluck('name');
-
-        foreach ($candidatePermissions as $permissionName) {
-            if ($userPermissions->contains($permissionName)) {
-                return true;
-            }
-        }
-
-        return null;
+    protected function hasPermission(User $user, string $permissionName): bool
+    {
+        return $user->can($permissionName);
     }
 }

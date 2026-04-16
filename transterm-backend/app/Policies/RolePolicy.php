@@ -12,31 +12,31 @@ class RolePolicy
 
     public function before(User $user, string $ability): ?bool
     {
-        return $this->allowByRoleOrPermission($user, 'role', $ability);
+        return $this->allowAdminBypass($user);
     }
 
     public function viewAny(?User $user): bool
     {
-        return $user !== null;
+        return $user !== null && $this->hasPermission($user, 'role.view-any');
     }
 
     public function view(?User $user, Role $role): bool
     {
-        return $user !== null;
+        return $user !== null && $this->hasPermission($user, 'role.view');
     }
 
     public function create(User $user): bool
     {
-        return false;
+        return $this->hasPermission($user, 'role.create');
     }
 
     public function update(User $user, Role $role): bool
     {
-        return false;
+        return $this->hasPermission($user, 'role.update');
     }
 
     public function delete(User $user, Role $role): bool
     {
-        return false;
+        return $this->hasPermission($user, 'role.delete');
     }
 }

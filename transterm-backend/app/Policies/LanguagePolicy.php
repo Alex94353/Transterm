@@ -12,31 +12,31 @@ class LanguagePolicy
 
     public function before(User $user, string $ability): ?bool
     {
-        return $this->allowByRoleOrPermission($user, 'language', $ability);
+        return $this->allowAdminBypass($user);
     }
 
     public function viewAny(?User $user): bool
     {
-        return $user !== null;
+        return $user !== null && $this->hasPermission($user, 'language.view-any');
     }
 
     public function view(?User $user, Language $language): bool
     {
-        return $user !== null;
+        return $user !== null && $this->hasPermission($user, 'language.view');
     }
 
     public function create(User $user): bool
     {
-        return false;
+        return $this->hasPermission($user, 'language.create');
     }
 
     public function update(User $user, Language $language): bool
     {
-        return false;
+        return $this->hasPermission($user, 'language.update');
     }
 
     public function delete(User $user, Language $language): bool
     {
-        return false;
+        return $this->hasPermission($user, 'language.delete');
     }
 }
