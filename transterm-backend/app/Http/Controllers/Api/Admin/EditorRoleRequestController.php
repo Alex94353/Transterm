@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\EditorRoleRequest;
 use App\Models\Role;
+use App\Support\AuditLogger;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -60,6 +61,15 @@ class EditorRoleRequestController extends Controller
             ], 422);
         }
 
+        $hasEligibleBaseRole = ($user->hasRole('Student') && $user->supportsStudentRoleByEmail())
+            || ($user->hasRole('Teacher') && $user->supportsTeacherRoleByEmail());
+
+        if (! $hasEligibleBaseRole) {
+            return response()->json([
+                'message' => 'Editor role can be granted only to Student or Teacher accounts.',
+            ], 422);
+        }
+
         $editorRole = Role::query()
             ->where('name', 'Editor')
             ->where('guard_name', 'web')
@@ -94,6 +104,18 @@ class EditorRoleRequestController extends Controller
                 'review_note' => 'Closed automatically after approval.',
             ]);
 
+        AuditLogger::log(
+            $request,
+            $request->user(),
+            'admin.editor-role-request.approved',
+            $editorRoleRequest,
+            $user,
+            [
+                'requested_role' => $editorRoleRequest->requested_role,
+                'request_id' => $editorRoleRequest->id,
+            ]
+        );
+
         return response()->json([
             'message' => 'Editor role granted successfully.',
             'request' => $editorRoleRequest->fresh([
@@ -122,6 +144,18 @@ class EditorRoleRequestController extends Controller
             'reviewed_at' => now(),
             'review_note' => $validated['note'] ?? null,
         ]);
+
+        AuditLogger::log(
+            $request,
+            $request->user(),
+            'admin.editor-role-request.rejected',
+            $editorRoleRequest,
+            $editorRoleRequest->user,
+            [
+                'request_id' => $editorRoleRequest->id,
+                'review_note' => $validated['note'] ?? null,
+            ]
+        );
 
         return response()->json([
             'message' => 'Editor role request rejected.',
