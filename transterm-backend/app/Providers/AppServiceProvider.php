@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Console\Commands\CreateSystemBackup;
+use App\Console\Commands\RestoreSystemBackup;
 use App\Models\Comment;
 use App\Models\Field;
 use App\Models\Glossary;
@@ -38,6 +40,13 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        if ($this->app->runningInConsole()) {
+            $this->commands([
+                CreateSystemBackup::class,
+                RestoreSystemBackup::class,
+            ]);
+        }
+
         Gate::policy(Comment::class, CommentPolicy::class);
         Gate::policy(Field::class, FieldPolicy::class);
         Gate::policy(Glossary::class, GlossaryPolicy::class);
