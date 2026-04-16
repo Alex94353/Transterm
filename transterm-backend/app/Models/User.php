@@ -18,6 +18,11 @@ class User extends Authenticatable implements MustVerifyEmail
     use HasApiTokens, HasFactory, Notifiable, HasRoles;
 
     /**
+     * @var array<int, string>
+     */
+    public const BASE_ROLE_NAMES = ['User', 'Student', 'Teacher'];
+
+    /**
      * The attributes that are mass assignable.
      *
      * @var list<string>
@@ -92,6 +97,87 @@ class User extends Authenticatable implements MustVerifyEmail
     public function comments(): HasMany
     {
         return $this->hasMany(Comment::class);
+    }
+
+    public function auditLogs(): HasMany
+    {
+        return $this->hasMany(AuditLog::class, 'actor_id');
+    }
+
+    public function auditTargets(): HasMany
+    {
+        return $this->hasMany(AuditLog::class, 'target_user_id');
+    }
+
+    public static function normalizeEmail(string $email): string
+    {
+        return mb_strtolower(trim($email));
+    }
+
+    public static function supportsStudentRoleForEmail(string $email): bool
+    {
+        return str_ends_with(self::normalizeEmail($email), '@student.ukf.sk');
+    }
+
+    public static function supportsTeacherRoleForEmail(string $email): bool
+    {
+        $normalized = self::normalizeEmail($email);
+
+        return ! self::supportsStudentRoleForEmail($normalized)
+            && str_ends_with($normalized, '@ukf.sk');
+    }
+
+    public static function resolveBaseRoleByEmail(string $email): string
+    {
+        if (self::supportsStudentRoleForEmail($email)) {
+            return 'Student';
+        }
+
+        if (self::supportsTeacherRoleForEmail($email)) {
+            return 'Teacher';
+        }
+
+        return 'User';
+    }
+
+    public static function supportsBaseRoleForEmail(string $baseRole, string $email): bool
+    {
+        return match ($baseRole) {
+            'User' => true,
+            'Student' => self::supportsStudentRoleForEmail($email),
+            'Teacher' => self::supportsTeacherRoleForEmail($email),
+            default => false,
+        };
+    }
+
+    public function supportsBaseRole(string $baseRole): bool
+    {
+        return self::supportsBaseRoleForEmail($baseRole, (string) $this->email);
+    }
+
+    public function resolveCurrentBaseRoleName(): ?string
+    {
+        $roleNames = $this->relationLoaded('roles')
+            ? $this->roles->pluck('name')
+            : $this->roles()->pluck('name');
+
+        foreach (self::BASE_ROLE_NAMES as $baseRoleName) {
+            if ($roleNames->contains($baseRoleName)) {
+                return $baseRoleName;
+            }
+        }
+
+        return null;
+    }
+
+    public function supportsStudentRoleByEmail(): bool
+    {
+        return self::supportsStudentRoleForEmail((string) $this->email);
+    }
+
+    public function supportsTeacherRoleByEmail(): bool
+    {
+        return self::supportsTeacherRoleForEmail((string) $this->email);
     }
 
 }

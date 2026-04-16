@@ -90,23 +90,68 @@ class AuthLoginSessionTest extends TestCase
             ->assertJsonPath('errors.login.0', 'Your account is banned.');
     }
 
-    public function test_login_rejects_non_academic_non_admin_account(): void
+    public function test_login_allows_non_ukf_user_with_base_user_role(): void
     {
         $user = User::factory()->create([
-            'email' => 'local_user@local.test',
+            'email' => 'local_user@gmail.com',
             'username' => 'local_user_login',
             'activated' => true,
             'banned' => false,
             'email_verified_at' => now(),
         ]);
-        $user->assignRole('Student');
+        $user->assignRole('User');
 
         $this->postJson('/api/auth/login', [
-            'login' => 'local_user@local.test',
+            'login' => 'local_user@gmail.com',
             'password' => 'password',
-        ])->assertStatus(422)
-            ->assertJsonValidationErrors('login')
-            ->assertJsonPath('errors.login.0', 'Only @student.ukf.sk and @ukf.sk accounts can sign in.');
+        ])->assertOk()
+            ->assertJsonPath('user.id', $user->id)
+            ->assertJsonPath('can_access_management', false);
+    }
+
+    public function test_login_assigns_base_role_for_legacy_roleless_user(): void
+    {
+        $user = User::factory()->create([
+            'email' => 'legacy_roleless@student.ukf.sk',
+            'username' => 'legacy_roleless_user',
+            'activated' => true,
+            'banned' => false,
+            'email_verified_at' => now(),
+        ]);
+
+        $this->assertCount(0, $user->roles);
+
+        $this->postJson('/api/auth/login', [
+            'login' => 'legacy_roleless@student.ukf.sk',
+            'password' => 'password',
+        ])->assertOk()
+            ->assertJsonPath('user.id', $user->id);
+
+        $this->assertTrue($user->fresh()->hasRole('Student'));
+    }
+
+    public function test_login_normalizes_invalid_base_role_by_email_domain(): void
+    {
+        $user = User::factory()->create([
+            'email' => 'legacy_invalid_base@gmail.com',
+            'username' => 'legacy_invalid_base',
+            'activated' => true,
+            'banned' => false,
+            'email_verified_at' => now(),
+        ]);
+        $user->assignRole('Student');
+        $user->assignRole('Editor');
+
+        $this->postJson('/api/auth/login', [
+            'login' => 'legacy_invalid_base@gmail.com',
+            'password' => 'password',
+        ])->assertOk()
+            ->assertJsonPath('user.id', $user->id);
+
+        $user->refresh();
+        $this->assertTrue($user->hasRole('User'));
+        $this->assertFalse($user->hasRole('Student'));
+        $this->assertFalse($user->hasRole('Editor'));
     }
 
     public function test_login_allows_non_academic_admin_account(): void
@@ -144,6 +189,26 @@ class AuthLoginSessionTest extends TestCase
             ->assertOk()
             ->assertJsonPath('user.id', $editor->id)
             ->assertJsonPath('can_access_management', true);
+    }
+
+    public function test_me_assigns_base_role_for_authenticated_roleless_user(): void
+    {
+        $user = User::factory()->create([
+            'email' => 'me_roleless_teacher@ukf.sk',
+            'username' => 'me_roleless_teacher',
+            'activated' => true,
+            'banned' => false,
+            'email_verified_at' => now(),
+        ]);
+
+        Sanctum::actingAs($user);
+
+        $this->getJson('/api/auth/me')
+            ->assertOk()
+            ->assertJsonPath('user.id', $user->id)
+            ->assertJsonFragment(['name' => 'Teacher']);
+
+        $this->assertTrue($user->fresh()->hasRole('Teacher'));
     }
 
     public function test_logout_revokes_current_access_token_only(): void

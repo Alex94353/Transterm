@@ -33,6 +33,36 @@ class AuthVerificationFlowTest extends TestCase
 
         $user = User::where('email', 'qa_user@student.ukf.sk')->firstOrFail();
         Notification::assertSentTo($user, VerifyEmail::class);
+        $this->assertTrue($user->hasRole('Student'));
+    }
+
+    public function test_register_assigns_teacher_or_external_user_base_role(): void
+    {
+        Notification::fake();
+
+        $this->postJson('/api/auth/register', [
+            'username' => 'teacher_role_user',
+            'email' => 'teacher_role_user@ukf.sk',
+            'name' => 'Teacher',
+            'surname' => 'Role',
+            'password' => 'Password123!',
+            'password_confirmation' => 'Password123!',
+        ])->assertCreated();
+
+        $teacher = User::where('email', 'teacher_role_user@ukf.sk')->firstOrFail();
+        $this->assertTrue($teacher->hasRole('Teacher'));
+
+        $this->postJson('/api/auth/register', [
+            'username' => 'external_role_user',
+            'email' => 'external_role_user@gmail.com',
+            'name' => 'External',
+            'surname' => 'Role',
+            'password' => 'Password123!',
+            'password_confirmation' => 'Password123!',
+        ])->assertCreated();
+
+        $external = User::where('email', 'external_role_user@gmail.com')->firstOrFail();
+        $this->assertTrue($external->hasRole('User'));
     }
 
     public function test_resend_verification_email_uses_normalized_email_and_sends_notification(): void

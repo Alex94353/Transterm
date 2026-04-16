@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Api\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\Role;
 use App\Models\User;
-use Closure;
 use Illuminate\Auth\Events\Verified;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -24,11 +24,6 @@ class AuthController extends Controller
                 'email',
                 'max:255',
                 'unique:users,email',
-                function (string $attribute, mixed $value, Closure $fail): void {
-                    if (! $this->isAllowedAcademicEmail((string) $value)) {
-                        $fail('Only @student.ukf.sk and @ukf.sk email addresses are allowed.');
-                    }
-                },
             ],
             'name' => ['required', 'string', 'max:255'],
             'surname' => ['nullable', 'string', 'max:255'],
@@ -45,6 +40,7 @@ class AuthController extends Controller
             'password' => Hash::make($validated['password']),
         ]);
 
+        $this->assignInitialBaseRole($user, $normalizedEmail);
         $user->sendEmailVerificationNotification();
 
         return response()->json([
@@ -105,12 +101,64 @@ class AuthController extends Controller
         return $this->verificationResponse($request, $status);
     }
 
-    private function isAllowedAcademicEmail(string $email): bool
+    private function assignInitialBaseRole(User $user, string $email): void
     {
-        $normalized = mb_strtolower(trim($email));
+        $resolvedRoleName = $this->resolveAssignableBaseRoleName($email);
 
-        return str_ends_with($normalized, '@student.ukf.sk')
-            || str_ends_with($normalized, '@ukf.sk');
+        if ($resolvedRoleName === null) {
+            return;
+        }
+
+        $user->syncRoles([$resolvedRoleName]);
+    }
+
+    private function ensureBaseRoleIntegrity(User $user): void
+    {
+        $resolvedRoleName = $this->resolveAssignableBaseRoleName((string) $user->email);
+        if ($resolvedRoleName === null) {
+            return;
+        }
+
+        $currentBaseRoles = $user->roles()
+            ->whereIn('name', User::BASE_ROLE_NAMES)
+            ->pluck('name')
+            ->values();
+
+        $hasExactlyOneExpectedRole = $currentBaseRoles->count() === 1
+            && $currentBaseRoles->first() === $resolvedRoleName;
+
+        if (! $hasExactlyOneExpectedRole) {
+            foreach (User::BASE_ROLE_NAMES as $baseRoleName) {
+                if ($user->hasRole($baseRoleName)) {
+                    $user->removeRole($baseRoleName);
+                }
+            }
+
+            $user->assignRole($resolvedRoleName);
+        }
+
+        if ($resolvedRoleName === 'User' && $user->hasRole('Editor')) {
+            $user->removeRole('Editor');
+        }
+    }
+
+    private function resolveAssignableBaseRoleName(string $email): ?string
+    {
+        $preferredRoleName = User::resolveBaseRoleByEmail($email);
+        $candidateRoleNames = array_values(array_unique([$preferredRoleName, 'User']));
+
+        foreach ($candidateRoleNames as $roleName) {
+            $exists = Role::query()
+                ->where('name', $roleName)
+                ->where('guard_name', 'web')
+                ->exists();
+
+            if ($exists) {
+                return $roleName;
+            }
+        }
+
+        return null;
     }
 
     public function login(Request $request): JsonResponse
@@ -146,14 +194,7 @@ class AuthController extends Controller
             ]);
         }
 
-        // Allow institutional accounts for student/teacher access.
-        // Keep existing admin accounts operable even if they use a local domain.
-        if (! $this->isAllowedAcademicEmail((string) $user->email) && ! $user->can('admin.access')) {
-            throw ValidationException::withMessages([
-                'login' => ['Only @student.ukf.sk and @ukf.sk accounts can sign in.'],
-            ]);
-        }
-
+        $this->ensureBaseRoleIntegrity($user);
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([
@@ -176,7 +217,10 @@ class AuthController extends Controller
 
     public function me(Request $request): JsonResponse
     {
-        $user = $request->user()->load([
+        $user = $request->user();
+        $this->ensureBaseRoleIntegrity($user);
+
+        $user->load([
             'profile',
             'country',
             'roles.permissions',

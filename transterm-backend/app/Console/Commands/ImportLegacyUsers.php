@@ -63,9 +63,17 @@ class ImportLegacyUsers extends Command
 
             $mappedRoleId = $this->mapRoleId($legacyUser->role_id);
             $role = Role::query()->find($mappedRoleId);
+            $resolvedBaseRole = User::resolveBaseRoleByEmail((string) $user->email);
 
-            if ($role) {
-                $user->syncRoles([$role]);
+            if (! $role) {
+                $user->syncRoles([$resolvedBaseRole]);
+            } elseif ($role->name === 'Admin') {
+                $user->syncRoles(array_values(array_unique([
+                    $resolvedBaseRole,
+                    'Admin',
+                ])));
+            } else {
+                $user->syncRoles([$resolvedBaseRole]);
             }
 
             UserProfile::updateOrCreate(
