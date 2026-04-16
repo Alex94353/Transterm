@@ -19,7 +19,7 @@ class PermissionSeeder extends Seeder
         $permissionNames = [
             'admin.access',
             'editor.access',
-            'editor.assess',
+            'editor.assign',
 
             'field.view-any',
             'field.view',
@@ -47,12 +47,14 @@ class PermissionSeeder extends Seeder
 
             'comment.update',
             'comment.delete',
+            'comment.create',
 
             'glossary.view-any',
             'glossary.view',
             'glossary.create',
             'glossary.update',
             'glossary.delete',
+            'glossary.approve',
 
             'term.view-any',
             'term.view',
@@ -83,13 +85,15 @@ class PermissionSeeder extends Seeder
             'Admin' => $permissionNames,
             'Editor' => [
                 'editor.access',
-            ],
-            'User' => [
-                'comment.update',
-                'comment.delete',
+                'field.view-any',
+                'field.view',
+                'glossary.view-any',
+                'glossary.view',
                 'glossary.create',
                 'glossary.update',
                 'glossary.delete',
+                'term.view-any',
+                'term.view',
                 'term.create',
                 'term.update',
                 'term.delete',
@@ -99,15 +103,26 @@ class PermissionSeeder extends Seeder
                 'user.view',
                 'user.update',
             ],
-            'Student' => [
+            'User' => [
+                'comment.create',
                 'comment.update',
                 'comment.delete',
-                'term.create',
-                'term.update',
-                'term.delete',
-                'reference.create',
-                'reference.update',
-                'reference.delete',
+                'user.view',
+                'user.update',
+            ],
+            'Student' => [
+                'comment.create',
+                'comment.update',
+                'comment.delete',
+                'user.view',
+                'user.update',
+            ],
+            'Teacher' => [
+                'comment.create',
+                'comment.update',
+                'comment.delete',
+                'glossary.approve',
+                'editor.assign',
                 'user.view',
                 'user.update',
             ],
@@ -125,9 +140,7 @@ class PermissionSeeder extends Seeder
                 ->filter()
                 ->values();
 
-            if ($permissionsForRole->isNotEmpty()) {
-                $role->givePermissionTo($permissionsForRole);
-            }
+            $role->syncPermissions($permissionsForRole);
         }
 
         app(PermissionRegistrar::class)->forgetCachedPermissions();
