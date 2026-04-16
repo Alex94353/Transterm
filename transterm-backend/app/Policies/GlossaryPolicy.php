@@ -12,7 +12,7 @@ class GlossaryPolicy
 
     public function before(User $user, string $ability): ?bool
     {
-        return $this->allowByRoleOrPermission($user, 'glossary', $ability);
+        return $this->allowAdminBypass($user);
     }
 
     public function viewAny(?User $user): bool
@@ -31,16 +31,40 @@ class GlossaryPolicy
 
     public function create(User $user): bool
     {
-        return true;
+        return $this->hasPermission($user, 'glossary.create');
     }
 
     public function update(User $user, Glossary $glossary): bool
     {
-        return (int) $user->id === (int) $glossary->owner_id;
+        return $this->hasPermission($user, 'glossary.update')
+            && (int) $user->id === (int) $glossary->owner_id;
     }
 
     public function delete(User $user, Glossary $glossary): bool
     {
-        return (int) $user->id === (int) $glossary->owner_id;
+        return $this->hasPermission($user, 'glossary.delete')
+            && (int) $user->id === (int) $glossary->owner_id;
+    }
+
+    public function approve(User $user, Glossary $glossary): bool
+    {
+        if (! $this->hasPermission($user, 'glossary.approve')) {
+            return false;
+        }
+
+        if (! $user->hasRole('Teacher') || ! $user->supportsTeacherRoleByEmail()) {
+            return false;
+        }
+
+        if ((int) $user->id === (int) $glossary->owner_id) {
+            return true;
+        }
+
+        $glossary->loadMissing('owner.roles:id,name');
+        $owner = $glossary->owner;
+
+        return $owner !== null
+            && $owner->hasRole('Student')
+            && $owner->supportsStudentRoleByEmail();
     }
 }
