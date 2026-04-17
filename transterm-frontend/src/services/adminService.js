@@ -60,6 +60,9 @@ export const adminService = {
   getUsers: (params, requestConfig = {}) => api.get('/admin/users', { params, ...requestConfig }),
   getUser: (id, requestConfig = {}) => api.get(`/admin/users/${id}`, requestConfig),
   updateUser: (id, data) => api.put(`/admin/users/${id}`, data),
+  setUserBaseRole: (id, baseRole) => api.patch(`/admin/users/${id}/base-role`, { base_role: baseRole }),
+  grantUserEditorRole: (id) => api.patch(`/admin/users/${id}/editor/grant`),
+  revokeUserEditorRole: (id) => api.patch(`/admin/users/${id}/editor/revoke`),
   deleteUser: (id) => api.delete(`/admin/users/${id}`),
   banUser: (id) => api.patch(`/admin/users/${id}/ban`),
   unbanUser: (id) => api.patch(`/admin/users/${id}/unban`),
@@ -71,6 +74,9 @@ export const adminService = {
     api.patch(`/admin/editor-role-requests/${id}/approve`, data),
   rejectEditorRoleRequest: (id, data = {}) =>
     api.patch(`/admin/editor-role-requests/${id}/reject`, data),
+
+  // Audit logs
+  getAuditLogs: (params, requestConfig = {}) => api.get('/admin/audit-logs', { params, ...requestConfig }),
 
   // Roles
   getRoles: (params, requestConfig = {}) => api.get('/admin/roles', { params, ...requestConfig }),

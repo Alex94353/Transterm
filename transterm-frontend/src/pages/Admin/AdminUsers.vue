@@ -144,23 +144,34 @@
             <el-radio :label="false">Inactive</el-radio>
           </el-radio-group>
         </el-form-item>
-        <el-form-item label="Role">
+        <el-form-item label="Base Role">
           <el-select-v2
-            v-model="formData.roleId"
-            :options="roleDialogOptions"
-            placeholder="Select role"
-            clearable
+            v-model="formData.baseRole"
+            :options="baseRoleSelectOptions"
+            placeholder="Select base role"
             :disabled="isEditingCurrentUser"
             style="width: 100%"
           />
         </el-form-item>
+        <el-form-item label="Editor">
+          <el-switch
+            v-model="formData.hasEditor"
+            :disabled="isEditingCurrentUser || formData.baseRole === 'User'"
+          />
+        </el-form-item>
+        <el-alert
+          title="Editor role can be assigned only to Student/Teacher. For base role User it is removed automatically."
+          type="info"
+          :closable="false"
+          show-icon
+        />
       </el-form>
     </admin-form-dialog>
   </admin-page-shell>
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import AdminFormDialog from '../../components/Admin/AdminFormDialog.vue'
 import AdminFilterSelect from '../../components/Admin/AdminFilterSelect.vue'
@@ -178,7 +189,6 @@ import adminService from '../../services/adminService'
 const users = ref([])
 const authStore = useAuthStore()
 const roleOptions = ref([])
-const roleDialogOptions = ref([])
 const activatedFilterOptions = [
   { label: 'All status', value: 'all' },
   { label: 'Active', value: 'active' },
@@ -217,8 +227,21 @@ const formData = reactive({
   name: '',
   email: '',
   activated: true,
-  roleId: null,
+  baseRole: 'User',
+  hasEditor: false,
 })
+
+const initialEditSnapshot = reactive({
+  activated: true,
+  baseRole: 'User',
+  hasEditor: false,
+})
+
+const baseRoleSelectOptions = [
+  { label: 'User', value: 'User' },
+  { label: 'Student', value: 'Student' },
+  { label: 'Teacher', value: 'Teacher' },
+]
 
 onMounted(() => {
   fetchRoles()
@@ -232,14 +255,9 @@ const fetchRoles = async () => {
       { cancelKey: 'admin:users:roles:lookup' },
     )
     roleOptions.value = response.data?.data || []
-    roleDialogOptions.value = roleOptions.value.map((role) => ({
-      label: role.name,
-      value: role.id,
-    }))
   } catch (err) {
     if (isRequestCanceled(err)) return
     roleOptions.value = []
-    roleDialogOptions.value = []
   }
 }
 
@@ -315,14 +333,41 @@ const isEditingCurrentUser = computed(() => {
   return Number(editingId.value) === Number(authStore.user?.id)
 })
 
+const hasRoleByName = (user, roleName) => {
+  const normalized = String(roleName || '').toLowerCase()
+  return (user?.roles || []).some((role) => String(role?.name || '').toLowerCase() === normalized)
+}
+
+const resolveBaseRoleName = (user) => {
+  const orderedBaseRoles = ['User', 'Student', 'Teacher']
+  return orderedBaseRoles.find((roleName) => hasRoleByName(user, roleName)) || 'User'
+}
+
+const hasEditorRole = (user) => hasRoleByName(user, 'Editor')
+
 const handleEdit = (user) => {
   editingId.value = user.id
   formData.name = user.name
   formData.email = user.email
   formData.activated = user.activated
-  formData.roleId = user.roles?.[0]?.id ?? null
+  formData.baseRole = resolveBaseRoleName(user)
+  formData.hasEditor = hasEditorRole(user)
+
+  initialEditSnapshot.activated = formData.activated
+  initialEditSnapshot.baseRole = formData.baseRole
+  initialEditSnapshot.hasEditor = formData.hasEditor
+
   dialogVisible.value = true
 }
+
+watch(
+  () => formData.baseRole,
+  (newBaseRole) => {
+    if (newBaseRole === 'User') {
+      formData.hasEditor = false
+    }
+  },
+)
 
 const handleSave = async () => {
   if (isEditingCurrentUser.value) {
@@ -333,10 +378,37 @@ const handleSave = async () => {
 
   isSubmitting.value = true
   try {
-    await adminService.updateUser(editingId.value, {
-      activated: formData.activated,
-      role_id: formData.roleId || undefined,
-    })
+    const desiredBaseRole = formData.baseRole || 'User'
+    const desiredEditorState = desiredBaseRole === 'User' ? false : !!formData.hasEditor
+    let hasAnyChange = false
+
+    if (formData.activated !== initialEditSnapshot.activated) {
+      await adminService.updateUser(editingId.value, {
+        activated: formData.activated,
+      })
+      hasAnyChange = true
+    }
+
+    if (desiredBaseRole !== initialEditSnapshot.baseRole) {
+      await adminService.setUserBaseRole(editingId.value, desiredBaseRole)
+      hasAnyChange = true
+    }
+
+    if (desiredEditorState !== initialEditSnapshot.hasEditor) {
+      if (desiredEditorState) {
+        await adminService.grantUserEditorRole(editingId.value)
+      } else {
+        await adminService.revokeUserEditorRole(editingId.value)
+      }
+      hasAnyChange = true
+    }
+
+    if (!hasAnyChange) {
+      ElMessage.info('No changes to save')
+      dialogVisible.value = false
+      return
+    }
+
     ElMessage.success('User updated successfully')
     dialogVisible.value = false
     fetchUsers()
