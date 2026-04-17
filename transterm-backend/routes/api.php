@@ -24,6 +24,9 @@ use App\Http\Controllers\Api\Admin\PermissionController as AdminPermissionContro
 use App\Http\Controllers\Api\Admin\RoleController as AdminRoleController;
 use App\Http\Controllers\Api\Admin\UserManagementController;
 use App\Http\Controllers\Api\Admin\EditorRoleRequestController as AdminEditorRoleRequestController;
+use App\Http\Controllers\Api\Admin\AuditLogController as AdminAuditLogController;
+use App\Http\Controllers\Api\Teacher\EditorAssignmentController as TeacherEditorAssignmentController;
+use App\Http\Controllers\Api\Teacher\GlossaryApprovalController as TeacherGlossaryApprovalController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -59,6 +62,30 @@ Route::middleware(['auth:sanctum', 'active.user', 'not.banned'])->group(function
     Route::post('/terms/{term}/comments', [CommentController::class, 'store']);
 });
 
+Route::middleware([
+    'auth:sanctum',
+    'active.user',
+    'not.banned',
+    'permission:glossary.approve|admin.access',
+    'throttle:30,1',
+])->prefix('teacher')->group(function () {
+    Route::get('/glossaries', [TeacherGlossaryApprovalController::class, 'index']);
+    Route::get('/glossaries/{glossary}', [TeacherGlossaryApprovalController::class, 'show']);
+    Route::patch('/glossaries/{glossary}/approve', [TeacherGlossaryApprovalController::class, 'approve']);
+});
+
+Route::middleware([
+    'auth:sanctum',
+    'active.user',
+    'not.banned',
+    'permission:editor.assign|admin.access',
+    'throttle:30,1',
+])->prefix('teacher')->group(function () {
+    Route::get('/students', [TeacherEditorAssignmentController::class, 'index']);
+    Route::patch('/students/{user}/assign-editor', [TeacherEditorAssignmentController::class, 'grant']);
+    Route::patch('/users/{user}/grant-editor', [TeacherEditorAssignmentController::class, 'grant']);
+});
+
 Route::middleware(['auth:sanctum', 'active.user', 'not.banned', 'permission:editor.access|admin.access'])->prefix('editor')->group(function () {
     Route::get('/terms', [AdminTermController::class, 'index']);
     Route::get('/terms/{term}', [AdminTermController::class, 'show']);
@@ -88,6 +115,9 @@ Route::middleware(['auth:sanctum', 'active.user', 'not.banned', 'permission:admi
     Route::get('/users', [UserManagementController::class, 'index']);
     Route::get('/users/{user}', [UserManagementController::class, 'show']);
     Route::put('/users/{user}', [UserManagementController::class, 'update']);
+    Route::patch('/users/{user}/base-role', [UserManagementController::class, 'setBaseRole']);
+    Route::patch('/users/{user}/editor/grant', [UserManagementController::class, 'grantEditor']);
+    Route::patch('/users/{user}/editor/revoke', [UserManagementController::class, 'revokeEditor']);
     Route::delete('/users/{user}', [UserManagementController::class, 'destroy']);
     Route::patch('/users/{user}/ban', [UserManagementController::class, 'ban']);
     Route::patch('/users/{user}/unban', [UserManagementController::class, 'unban']);
@@ -95,6 +125,7 @@ Route::middleware(['auth:sanctum', 'active.user', 'not.banned', 'permission:admi
     Route::get('/editor-role-requests', [AdminEditorRoleRequestController::class, 'index']);
     Route::patch('/editor-role-requests/{editorRoleRequest}/approve', [AdminEditorRoleRequestController::class, 'approve']);
     Route::patch('/editor-role-requests/{editorRoleRequest}/reject', [AdminEditorRoleRequestController::class, 'reject']);
+    Route::get('/audit-logs', [AdminAuditLogController::class, 'index']);
 
     Route::get('/references', [AdminReferenceController::class, 'index']);
     Route::get('/references/{reference}', [AdminReferenceController::class, 'show']);
