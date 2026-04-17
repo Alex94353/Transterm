@@ -7,6 +7,7 @@ use App\Http\Resources\GlossaryCollection;
 use App\Http\Resources\GlossaryResource;
 use App\Models\Glossary;
 use App\Models\User;
+use App\Support\AuditLogger;
 use App\Support\ApiListCache;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -175,6 +176,8 @@ class GlossaryController extends Controller
             'field_id' => $validated['field_id'],
             'owner_id' => $request->user()->id,
             'approved' => $isEditorOnly ? false : ($validated['approved'] ?? false),
+            'approved_by' => ($isEditorOnly || ! ($validated['approved'] ?? false)) ? null : $request->user()->id,
+            'approved_at' => ($isEditorOnly || ! ($validated['approved'] ?? false)) ? null : now(),
             'is_public' => $validated['is_public'] ?? false,
         ]);
 
@@ -207,6 +210,7 @@ class GlossaryController extends Controller
     {
         $this->authorize('update', $glossary);
 
+        $previousApproved = (bool) $glossary->approved;
         $isEditorOnly = $this->shouldScopeToOwner($request->user());
 
         $validated = $request->validate([
@@ -226,8 +230,32 @@ class GlossaryController extends Controller
         $glossaryData = $validated;
         unset($glossaryData['translation_language_id'], $glossaryData['title'], $glossaryData['description']);
 
+        if (array_key_exists('approved', $glossaryData)) {
+            if ((bool) $glossaryData['approved']) {
+                $glossaryData['approved_by'] = $request->user()->id;
+                $glossaryData['approved_at'] = now();
+            } else {
+                $glossaryData['approved_by'] = null;
+                $glossaryData['approved_at'] = null;
+            }
+        }
+
         if ($glossaryData !== []) {
             $glossary->update($glossaryData);
+        }
+
+        if (array_key_exists('approved', $glossaryData) && (bool) $glossaryData['approved'] !== $previousApproved) {
+            AuditLogger::log(
+                $request,
+                $request->user(),
+                'admin.glossary.approval.changed',
+                $glossary,
+                $glossary->owner,
+                [
+                    'old_approved' => $previousApproved,
+                    'new_approved' => (bool) $glossaryData['approved'],
+                ]
+            );
         }
 
         $this->syncTranslationFromPayload($request, $glossary, $validated);
@@ -254,7 +282,7 @@ class GlossaryController extends Controller
             ->response();
     }
 
-    public function destroy(Glossary $glossary): JsonResponse
+    public function destroy(Request $request, Glossary $glossary): JsonResponse
     {
         $this->authorize('delete', $glossary);
 
@@ -270,6 +298,16 @@ class GlossaryController extends Controller
         }
 
         $glossary->delete();
+        AuditLogger::log(
+            $request,
+            $request->user(),
+            'admin.glossary.deleted',
+            $glossary,
+            $glossary->owner,
+            [
+                'terms_count' => $termsCount,
+            ]
+        );
         ApiListCache::bumpGlossaryAndTermVersions();
 
         return response()->json([

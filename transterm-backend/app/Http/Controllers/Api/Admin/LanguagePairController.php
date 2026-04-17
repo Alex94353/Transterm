@@ -141,7 +141,9 @@ class LanguagePairController extends Controller
     public function destroy(LanguagePair $languagePair): JsonResponse
     {
         $languagePair->loadCount([
-            'glossaries',
+            'glossaries as glossaries_count' => function ($q) {
+                $q->withTrashed();
+            },
         ]);
 
         $glossariesCount = (int) ($languagePair->glossaries_count ?? 0);

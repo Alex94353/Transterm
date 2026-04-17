@@ -131,8 +131,12 @@ class FieldController extends Controller
         $this->authorize('delete', $field);
 
         $field->loadCount([
-            'glossaries',
-            'terms',
+            'glossaries as glossaries_count' => function ($q) {
+                $q->withTrashed();
+            },
+            'terms as terms_count' => function ($q) {
+                $q->withTrashed();
+            },
         ]);
 
         $glossariesCount = (int) ($field->glossaries_count ?? 0);

@@ -3,6 +3,7 @@
 namespace Tests\Feature\Api\Editor;
 
 use App\Models\Glossary;
+use App\Models\Term;
 use App\Models\User;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -149,6 +150,103 @@ class EditorAccessGuardTest extends TestCase
             'id' => $glossary->id,
             'approved' => 1,
             'is_public' => 1,
+        ]);
+    }
+
+    public function test_editor_term_delete_is_soft_delete(): void
+    {
+        $editor = User::factory()->create([
+            'email' => 'editor-soft-term@ukf.sk',
+            'username' => 'editor_soft_term',
+            'activated' => true,
+            'email_verified_at' => now(),
+        ]);
+        $editor->assignRole('Editor');
+        Sanctum::actingAs($editor);
+
+        $fixtures = $this->createLanguagePairAndField();
+        $glossary = Glossary::create([
+            'owner_id' => $editor->id,
+            'language_pair_id' => $fixtures['pair']->id,
+            'field_id' => $fixtures['field']->id,
+            'approved' => false,
+            'is_public' => false,
+        ]);
+        $term = Term::create([
+            'glossary_id' => $glossary->id,
+            'field_id' => $fixtures['field']->id,
+            'created_by' => $editor->id,
+        ]);
+
+        $this->deleteJson("/api/editor/terms/{$term->id}")
+            ->assertOk()
+            ->assertJsonPath('message', 'Term deleted successfully.');
+
+        $this->assertSoftDeleted('terms', [
+            'id' => $term->id,
+        ]);
+    }
+
+    public function test_editor_glossary_delete_is_soft_delete_when_no_active_terms(): void
+    {
+        $editor = User::factory()->create([
+            'email' => 'editor-soft-glossary@ukf.sk',
+            'username' => 'editor_soft_glossary',
+            'activated' => true,
+            'email_verified_at' => now(),
+        ]);
+        $editor->assignRole('Editor');
+        Sanctum::actingAs($editor);
+
+        $fixtures = $this->createLanguagePairAndField();
+        $glossary = Glossary::create([
+            'owner_id' => $editor->id,
+            'language_pair_id' => $fixtures['pair']->id,
+            'field_id' => $fixtures['field']->id,
+            'approved' => false,
+            'is_public' => false,
+        ]);
+
+        $this->deleteJson("/api/editor/glossaries/{$glossary->id}")
+            ->assertOk()
+            ->assertJsonPath('message', 'Glossary deleted successfully.');
+
+        $this->assertSoftDeleted('glossaries', [
+            'id' => $glossary->id,
+        ]);
+    }
+
+    public function test_editor_glossary_delete_is_blocked_when_active_terms_exist(): void
+    {
+        $editor = User::factory()->create([
+            'email' => 'editor-blocked-glossary@ukf.sk',
+            'username' => 'editor_blocked_glossary',
+            'activated' => true,
+            'email_verified_at' => now(),
+        ]);
+        $editor->assignRole('Editor');
+        Sanctum::actingAs($editor);
+
+        $fixtures = $this->createLanguagePairAndField();
+        $glossary = Glossary::create([
+            'owner_id' => $editor->id,
+            'language_pair_id' => $fixtures['pair']->id,
+            'field_id' => $fixtures['field']->id,
+            'approved' => false,
+            'is_public' => false,
+        ]);
+        Term::create([
+            'glossary_id' => $glossary->id,
+            'field_id' => $fixtures['field']->id,
+            'created_by' => $editor->id,
+        ]);
+
+        $this->deleteJson("/api/editor/glossaries/{$glossary->id}")
+            ->assertStatus(422);
+
+        $this->assertDatabaseHas('glossaries', [
+            'id' => $glossary->id,
+            'deleted_at' => null,
         ]);
     }
 }

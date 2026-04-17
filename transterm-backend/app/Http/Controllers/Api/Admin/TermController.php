@@ -8,6 +8,7 @@ use App\Http\Resources\TermResource;
 use App\Models\Glossary;
 use App\Models\Term;
 use App\Models\User;
+use App\Support\AuditLogger;
 use App\Support\ApiListCache;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -263,6 +264,16 @@ class TermController extends Controller
         $this->authorize('delete', $term);
 
         $term->delete();
+        AuditLogger::log(
+            request(),
+            request()->user(),
+            'admin.term.deleted',
+            $term,
+            $term->creator,
+            [
+                'glossary_id' => $term->glossary_id,
+            ]
+        );
         ApiListCache::bumpGlossaryAndTermVersions();
 
         return response()->json([
