@@ -183,4 +183,30 @@ class AdminEditorRoleRequestControllerTest extends TestCase
             ->assertStatus(422)
             ->assertJsonPath('message', 'Only pending requests can be rejected.');
     }
+
+    public function test_approve_blocks_request_if_user_base_role_domain_is_invalid(): void
+    {
+        $this->actingAsAdmin();
+
+        $requester = User::factory()->create([
+            'email' => 'invalid_domain_requester@teacher.sk',
+            'username' => 'invalid_domain_requester',
+            'activated' => true,
+            'banned' => false,
+            'email_verified_at' => now(),
+        ]);
+        $requester->assignRole('Student');
+
+        $request = EditorRoleRequest::query()->create([
+            'user_id' => $requester->id,
+            'requested_role' => 'Editor',
+            'requester_role_name' => 'Student',
+            'status' => 'pending',
+            'request_message' => 'please approve',
+        ]);
+
+        $this->patchJson("/api/admin/editor-role-requests/{$request->id}/approve")
+            ->assertStatus(422)
+            ->assertJsonPath('message', 'Editor role can be granted only to Student or Teacher accounts.');
+    }
 }

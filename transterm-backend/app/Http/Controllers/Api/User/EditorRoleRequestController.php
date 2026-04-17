@@ -31,10 +31,12 @@ class EditorRoleRequestController extends Controller
             ], 422);
         }
 
-        $canRequest = $user->hasRole('User') || $user->hasRole('Student');
+        $canRequest = ($user->hasRole('Student') && $user->supportsStudentRoleByEmail())
+            || ($user->hasRole('Teacher') && $user->supportsTeacherRoleByEmail());
+
         if (! $canRequest) {
             return response()->json([
-                'message' => 'Only User or Student accounts can request Editor role.',
+                'message' => 'Only Student or Teacher accounts can request Editor role.',
             ], 422);
         }
 

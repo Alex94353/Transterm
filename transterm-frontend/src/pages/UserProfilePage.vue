@@ -156,7 +156,7 @@ const roleNames = computed(() =>
 const canRequestEditorRole = computed(() => {
   if (!authStore.user) return false
   if (authStore.isAdmin || authStore.isEditor) return false
-  return roleNames.value.includes('user') || roleNames.value.includes('student')
+  return roleNames.value.includes('student') || roleNames.value.includes('teacher')
 })
 
 const editorRequestStatus = computed(() => {
@@ -194,8 +194,14 @@ const fetchLatestEditorRoleRequest = async () => {
 const handleUpdate = async () => {
   if (!form.value) return
 
+  const isValid = await Promise.resolve(form.value.validate())
+    .then((result) => result !== false)
+    .catch(() => false)
+  if (!isValid) {
+    return
+  }
+
   try {
-    await form.value.validate()
     isLoading.value = true
     const response = await userService.updateProfile({
       name: formData.name,

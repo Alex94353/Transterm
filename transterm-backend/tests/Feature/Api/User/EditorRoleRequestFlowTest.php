@@ -53,7 +53,7 @@ class EditorRoleRequestFlowTest extends TestCase
             ->assertJsonPath('request.status', 'pending');
     }
 
-    public function test_user_cannot_create_second_pending_request(): void
+    public function test_student_cannot_create_second_pending_request(): void
     {
         $user = User::factory()->create([
             'email' => 'duplicate_request@student.ukf.sk',
@@ -62,13 +62,13 @@ class EditorRoleRequestFlowTest extends TestCase
             'banned' => false,
             'email_verified_at' => now(),
         ]);
-        $user->assignRole('User');
+        $user->assignRole('Student');
         Sanctum::actingAs($user);
 
         EditorRoleRequest::query()->create([
             'user_id' => $user->id,
             'requested_role' => 'Editor',
-            'requester_role_name' => 'User',
+            'requester_role_name' => 'Student',
             'status' => 'pending',
             'request_message' => 'already waiting',
         ]);
@@ -97,7 +97,62 @@ class EditorRoleRequestFlowTest extends TestCase
             ->assertJsonPath('message', 'Your account already has management access.');
     }
 
-    public function test_only_user_or_student_roles_can_request_editor_role(): void
+    public function test_only_student_or_teacher_roles_can_request_editor_role(): void
+    {
+        $externalUser = User::factory()->create([
+            'email' => 'external_request@gmail.com',
+            'username' => 'external_request_user',
+            'activated' => true,
+            'banned' => false,
+            'email_verified_at' => now(),
+        ]);
+        $externalUser->assignRole('User');
+        Sanctum::actingAs($externalUser);
+
+        $this->postJson('/api/user/editor-role-requests', [
+            'message' => 'external user request',
+        ])->assertStatus(422)
+            ->assertJsonPath('message', 'Only Student or Teacher accounts can request Editor role.');
+    }
+
+    public function test_teacher_can_request_editor_role(): void
+    {
+        $teacher = User::factory()->create([
+            'email' => 'teacher_editor_request@ukf.sk',
+            'username' => 'teacher_editor_request',
+            'activated' => true,
+            'banned' => false,
+            'email_verified_at' => now(),
+        ]);
+        $teacher->assignRole('Teacher');
+        Sanctum::actingAs($teacher);
+
+        $this->postJson('/api/user/editor-role-requests', [
+            'message' => 'teacher request',
+        ])->assertCreated()
+            ->assertJsonPath('request.requester_role_name', 'Teacher')
+            ->assertJsonPath('request.status', 'pending');
+    }
+
+    public function test_student_role_with_non_student_domain_cannot_request_editor_role(): void
+    {
+        $student = User::factory()->create([
+            'email' => 'invalid_student_domain@teacher.sk',
+            'username' => 'invalid_student_domain',
+            'activated' => true,
+            'banned' => false,
+            'email_verified_at' => now(),
+        ]);
+        $student->assignRole('Student');
+        Sanctum::actingAs($student);
+
+        $this->postJson('/api/user/editor-role-requests', [
+            'message' => 'should be blocked by domain policy',
+        ])->assertStatus(422)
+            ->assertJsonPath('message', 'Only Student or Teacher accounts can request Editor role.');
+    }
+
+    public function test_custom_roles_cannot_request_editor_role(): void
     {
         $reviewerRole = Role::query()->firstOrCreate([
             'name' => 'Reviewer',
@@ -117,6 +172,6 @@ class EditorRoleRequestFlowTest extends TestCase
         $this->postJson('/api/user/editor-role-requests', [
             'message' => 'request from unsupported role',
         ])->assertStatus(422)
-            ->assertJsonPath('message', 'Only User or Student accounts can request Editor role.');
+            ->assertJsonPath('message', 'Only Student or Teacher accounts can request Editor role.');
     }
 }
