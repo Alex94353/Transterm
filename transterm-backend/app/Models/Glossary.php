@@ -6,10 +6,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Glossary extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
         'id',
@@ -17,17 +18,25 @@ class Glossary extends Model
         'language_pair_id',
         'field_id',
         'approved',
+        'approved_by',
+        'approved_at',
         'is_public',
     ];
 
     protected $casts = [
         'approved' => 'boolean',
+        'approved_at' => 'datetime',
         'is_public' => 'boolean',
     ];
 
     public function owner(): BelongsTo
     {
         return $this->belongsTo(User::class, 'owner_id');
+    }
+
+    public function approver(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'approved_by');
     }
 
     public function languagePair(): BelongsTo
