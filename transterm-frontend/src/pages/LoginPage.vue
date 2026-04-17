@@ -27,13 +27,13 @@
         <el-form-item label="Login" prop="login">
           <el-input
             v-model="formData.login"
-            placeholder="Enter UKF email or username"
+            placeholder="Enter email or username"
           />
         </el-form-item>
 
         <el-form-item>
           <el-alert
-            title="Sign in with @student.ukf.sk or @ukf.sk account"
+            title="Use your account email or username"
             type="info"
             :closable="false"
             show-icon
@@ -144,8 +144,14 @@ const rules = {
 const handleLogin = async () => {
   if (!form.value) return
 
+  const isValid = await Promise.resolve(form.value.validate())
+    .then((result) => result !== false)
+    .catch(() => false)
+  if (!isValid) {
+    return
+  }
+
   try {
-    await form.value.validate()
     await authStore.login(formData.login, formData.password)
     ElMessage.success('Login successful!')
     router.push('/')

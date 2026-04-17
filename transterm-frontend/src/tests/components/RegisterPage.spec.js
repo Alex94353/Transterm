@@ -70,6 +70,11 @@ const buildWrapper = () =>
     },
   })
 
+const flushAsync = async () => {
+  await Promise.resolve()
+  await nextTick()
+}
+
 describe('RegisterPage', () => {
   beforeEach(() => {
     shared.router.push.mockReset()
@@ -101,6 +106,7 @@ describe('RegisterPage', () => {
 
     const registerButton = wrapper.findAll('button').find((button) => button.text().includes('Register'))
     await registerButton.trigger('click')
+    await flushAsync()
 
     expect(shared.authStore.register).toHaveBeenCalledWith({
       username: 'qa_user',
@@ -119,6 +125,7 @@ describe('RegisterPage', () => {
 
     const registerButton = wrapper.findAll('button').find((button) => button.text().includes('Register'))
     await registerButton.trigger('click')
+    await flushAsync()
 
     expect(shared.message.warning).toHaveBeenCalledWith(
       'Account created. Check your email and confirm activation link.',
@@ -133,6 +140,7 @@ describe('RegisterPage', () => {
 
     const registerButton = wrapper.findAll('button').find((button) => button.text().includes('Register'))
     await registerButton.trigger('click')
+    await flushAsync()
 
     expect(shared.message.success).toHaveBeenCalledWith('Registration successful!')
     expect(shared.router.push).toHaveBeenCalledWith('/')
