@@ -15,7 +15,6 @@ class ReferencePolicyTest extends TestCase
         $policy = new ReferencePolicy();
         $user = Mockery::mock(User::class)->makePartial();
         $user->shouldReceive('can')->with('admin.access')->andReturn(false);
-        $user->shouldReceive('getAllPermissions')->andReturn(collect());
 
         $this->assertNull($policy->before($user, 'update'));
     }
@@ -24,7 +23,8 @@ class ReferencePolicyTest extends TestCase
     {
         $policy = new ReferencePolicy();
         $reference = new Reference();
-        $user = new User(['id' => 21]);
+        $user = Mockery::mock(User::class)->makePartial();
+        $user->shouldReceive('can')->with('reference.create')->andReturn(true);
 
         $this->assertTrue($policy->viewAny(null));
         $this->assertTrue($policy->viewAny($user));
@@ -33,11 +33,19 @@ class ReferencePolicyTest extends TestCase
         $this->assertTrue($policy->create($user));
     }
 
-    public function test_update_and_delete_allow_only_reference_owner(): void
+    public function test_update_and_delete_allow_only_reference_owner_with_permission(): void
     {
         $policy = new ReferencePolicy();
-        $owner = new User(['id' => 7]);
-        $otherUser = new User(['id' => 8]);
+        $owner = Mockery::mock(User::class)->makePartial();
+        $owner->id = 7;
+        $owner->shouldReceive('can')->with('reference.update')->andReturn(true);
+        $owner->shouldReceive('can')->with('reference.delete')->andReturn(true);
+
+        $otherUser = Mockery::mock(User::class)->makePartial();
+        $otherUser->id = 8;
+        $otherUser->shouldReceive('can')->with('reference.update')->andReturn(true);
+        $otherUser->shouldReceive('can')->with('reference.delete')->andReturn(true);
+
         $reference = new Reference(['user_id' => 7]);
 
         $this->assertTrue($policy->update($owner, $reference));

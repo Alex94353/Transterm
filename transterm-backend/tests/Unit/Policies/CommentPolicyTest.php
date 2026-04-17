@@ -15,16 +15,32 @@ class CommentPolicyTest extends TestCase
         $policy = new CommentPolicy();
         $user = Mockery::mock(User::class)->makePartial();
         $user->shouldReceive('can')->with('admin.access')->andReturn(false);
-        $user->shouldReceive('getAllPermissions')->andReturn(collect());
 
         $this->assertNull($policy->before($user, 'update'));
     }
 
-    public function test_update_and_delete_allow_only_comment_author(): void
+    public function test_create_requires_comment_create_permission(): void
     {
         $policy = new CommentPolicy();
-        $owner = new User(['id' => 10]);
-        $otherUser = new User(['id' => 11]);
+        $user = Mockery::mock(User::class)->makePartial();
+        $user->shouldReceive('can')->with('comment.create')->andReturn(true);
+
+        $this->assertTrue($policy->create($user));
+    }
+
+    public function test_update_and_delete_allow_only_comment_author_with_permission(): void
+    {
+        $policy = new CommentPolicy();
+        $owner = Mockery::mock(User::class)->makePartial();
+        $owner->id = 10;
+        $owner->shouldReceive('can')->with('comment.update')->andReturn(true);
+        $owner->shouldReceive('can')->with('comment.delete')->andReturn(true);
+
+        $otherUser = Mockery::mock(User::class)->makePartial();
+        $otherUser->id = 11;
+        $otherUser->shouldReceive('can')->with('comment.update')->andReturn(true);
+        $otherUser->shouldReceive('can')->with('comment.delete')->andReturn(true);
+
         $comment = new Comment(['user_id' => 10]);
 
         $this->assertTrue($policy->update($owner, $comment));

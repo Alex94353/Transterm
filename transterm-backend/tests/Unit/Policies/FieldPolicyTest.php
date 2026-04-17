@@ -15,16 +15,17 @@ class FieldPolicyTest extends TestCase
         $policy = new FieldPolicy();
         $user = Mockery::mock(User::class)->makePartial();
         $user->shouldReceive('can')->with('admin.access')->andReturn(false);
-        $user->shouldReceive('getAllPermissions')->andReturn(collect());
 
         $this->assertNull($policy->before($user, 'viewAny'));
     }
 
-    public function test_view_methods_require_authenticated_user(): void
+    public function test_view_methods_require_permission(): void
     {
         $policy = new FieldPolicy();
         $field = new Field();
-        $user = new User(['id' => 1]);
+        $user = Mockery::mock(User::class)->makePartial();
+        $user->shouldReceive('can')->with('field.view-any')->andReturn(true);
+        $user->shouldReceive('can')->with('field.view')->andReturn(true);
 
         $this->assertTrue($policy->viewAny($user));
         $this->assertFalse($policy->viewAny(null));
@@ -33,14 +34,31 @@ class FieldPolicyTest extends TestCase
         $this->assertFalse($policy->view(null, $field));
     }
 
-    public function test_mutating_methods_are_denied_by_default(): void
+    public function test_view_methods_allow_editor_access_fallback(): void
     {
         $policy = new FieldPolicy();
         $field = new Field();
-        $user = new User(['id' => 1]);
+        $user = Mockery::mock(User::class)->makePartial();
+        $user->shouldReceive('can')->with('field.view-any')->andReturn(false);
+        $user->shouldReceive('can')->with('editor.access')->andReturn(true);
+        $user->shouldReceive('can')->with('field.view')->andReturn(false);
+        $user->shouldReceive('can')->with('editor.access')->andReturn(true);
 
-        $this->assertFalse($policy->create($user));
-        $this->assertFalse($policy->update($user, $field));
-        $this->assertFalse($policy->delete($user, $field));
+        $this->assertTrue($policy->viewAny($user));
+        $this->assertTrue($policy->view($user, $field));
+    }
+
+    public function test_mutating_methods_require_permissions(): void
+    {
+        $policy = new FieldPolicy();
+        $field = new Field();
+        $user = Mockery::mock(User::class)->makePartial();
+        $user->shouldReceive('can')->with('field.create')->andReturn(true);
+        $user->shouldReceive('can')->with('field.update')->andReturn(true);
+        $user->shouldReceive('can')->with('field.delete')->andReturn(true);
+
+        $this->assertTrue($policy->create($user));
+        $this->assertTrue($policy->update($user, $field));
+        $this->assertTrue($policy->delete($user, $field));
     }
 }

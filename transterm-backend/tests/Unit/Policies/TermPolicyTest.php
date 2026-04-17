@@ -6,6 +6,7 @@ use App\Models\Glossary;
 use App\Models\Term;
 use App\Models\User;
 use App\Policies\TermPolicy;
+use Mockery;
 use Tests\TestCase;
 
 class TermPolicyTest extends TestCase
@@ -38,8 +39,14 @@ class TermPolicyTest extends TestCase
     public function test_update_is_limited_to_creator(): void
     {
         $policy = new TermPolicy();
-        $creator = new User(['id' => 11]);
-        $otherUser = new User(['id' => 12]);
+        $creator = Mockery::mock(User::class)->makePartial();
+        $creator->id = 11;
+        $creator->shouldReceive('can')->with('term.update')->andReturn(true);
+
+        $otherUser = Mockery::mock(User::class)->makePartial();
+        $otherUser->id = 12;
+        $otherUser->shouldReceive('can')->with('term.update')->andReturn(true);
+
         $term = new Term(['created_by' => 11]);
 
         $this->assertTrue($policy->update($creator, $term));
@@ -49,8 +56,14 @@ class TermPolicyTest extends TestCase
     public function test_delete_is_limited_to_creator(): void
     {
         $policy = new TermPolicy();
-        $creator = new User(['id' => 2]);
-        $otherUser = new User(['id' => 3]);
+        $creator = Mockery::mock(User::class)->makePartial();
+        $creator->id = 2;
+        $creator->shouldReceive('can')->with('term.delete')->andReturn(true);
+
+        $otherUser = Mockery::mock(User::class)->makePartial();
+        $otherUser->id = 3;
+        $otherUser->shouldReceive('can')->with('term.delete')->andReturn(true);
+
         $term = new Term(['created_by' => 2]);
 
         $this->assertTrue($policy->delete($creator, $term));

@@ -65,10 +65,28 @@ describe('adminService', () => {
     expect(mockApi.get).toHaveBeenCalledWith('/admin/users', { params })
   })
 
+  it('uses dedicated admin endpoints for base role and editor toggles', () => {
+    adminService.setUserBaseRole(7, 'Teacher')
+    adminService.grantUserEditorRole(7)
+    adminService.revokeUserEditorRole(7)
+
+    expect(mockApi.patch).toHaveBeenNthCalledWith(1, '/admin/users/7/base-role', { base_role: 'Teacher' })
+    expect(mockApi.patch).toHaveBeenNthCalledWith(2, '/admin/users/7/editor/grant')
+    expect(mockApi.patch).toHaveBeenNthCalledWith(3, '/admin/users/7/editor/revoke')
+  })
+
   it('uses admin endpoint for banning user', () => {
     adminService.banUser(5)
 
     expect(mockApi.patch).toHaveBeenCalledWith('/admin/users/5/ban')
+  })
+
+  it('uses admin endpoint for audit logs list', () => {
+    adminService.getAuditLogs({ action: 'admin.user', per_page: 20 })
+
+    expect(mockApi.get).toHaveBeenCalledWith('/admin/audit-logs', {
+      params: { action: 'admin.user', per_page: 20 },
+    })
   })
 
   it('uses editor endpoint for lookup language pairs', () => {

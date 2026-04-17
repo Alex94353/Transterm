@@ -15,16 +15,17 @@ class LanguagePolicyTest extends TestCase
         $policy = new LanguagePolicy();
         $user = Mockery::mock(User::class)->makePartial();
         $user->shouldReceive('can')->with('admin.access')->andReturn(false);
-        $user->shouldReceive('getAllPermissions')->andReturn(collect());
 
         $this->assertNull($policy->before($user, 'view'));
     }
 
-    public function test_view_methods_require_authenticated_user(): void
+    public function test_view_methods_require_permission(): void
     {
         $policy = new LanguagePolicy();
         $language = new Language();
-        $user = new User(['id' => 2]);
+        $user = Mockery::mock(User::class)->makePartial();
+        $user->shouldReceive('can')->with('language.view-any')->andReturn(true);
+        $user->shouldReceive('can')->with('language.view')->andReturn(true);
 
         $this->assertTrue($policy->viewAny($user));
         $this->assertFalse($policy->viewAny(null));
@@ -33,14 +34,17 @@ class LanguagePolicyTest extends TestCase
         $this->assertFalse($policy->view(null, $language));
     }
 
-    public function test_mutating_methods_are_denied_by_default(): void
+    public function test_mutating_methods_require_permissions(): void
     {
         $policy = new LanguagePolicy();
         $language = new Language();
-        $user = new User(['id' => 2]);
+        $user = Mockery::mock(User::class)->makePartial();
+        $user->shouldReceive('can')->with('language.create')->andReturn(true);
+        $user->shouldReceive('can')->with('language.update')->andReturn(true);
+        $user->shouldReceive('can')->with('language.delete')->andReturn(true);
 
-        $this->assertFalse($policy->create($user));
-        $this->assertFalse($policy->update($user, $language));
-        $this->assertFalse($policy->delete($user, $language));
+        $this->assertTrue($policy->create($user));
+        $this->assertTrue($policy->update($user, $language));
+        $this->assertTrue($policy->delete($user, $language));
     }
 }
