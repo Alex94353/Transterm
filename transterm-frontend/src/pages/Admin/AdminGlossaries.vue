@@ -339,6 +339,7 @@ const fetchFields = async () => {
   } catch (err) {
     if (isRequestCanceled(err)) return
     fields.value = []
+    ElMessage.error(err.response?.data?.message || 'Failed to load fields')
   }
 }
 
@@ -385,6 +386,16 @@ const handleEdit = (glossary) => {
 }
 
 const handleSave = async () => {
+  if (!formData.language_pair_id) {
+    ElMessage.warning('Language pair is required')
+    return
+  }
+
+  if (!formData.field_id) {
+    ElMessage.warning('Field is required')
+    return
+  }
+
   const normalizedTitle = formData.title?.trim()
   if (!normalizedTitle) {
     ElMessage.warning('Title is required')
