@@ -9,6 +9,7 @@ async function createRouterWithAuthState(overrides = {}) {
     isAuthenticated: false,
     isAdmin: false,
     canAccessManagement: false,
+    hasPermission: vi.fn().mockReturnValue(false),
     getCurrentUser: vi.fn().mockResolvedValue(null),
     ...overrides,
   }
@@ -30,29 +31,46 @@ describe('router', () => {
     expect(routePaths).toContain('/login')
     expect(routePaths).toContain('/register')
     expect(routePaths).toContain('/glossaries')
+    expect(routePaths).toContain('/admin')
+    expect(routePaths).toContain('/admin/users')
+    expect(routePaths).toContain('/admin/audit-logs')
     expect(routePaths).toContain('/editor')
     expect(routePaths).toContain('/editor/users')
+    expect(routePaths).toContain('/editor/audit-logs')
+    expect(routePaths).toContain('/teacher/tools')
     expect(routePaths).toContain('/:pathMatch(.*)*')
   })
 
-  it('redirects legacy /admin path to /editor and preserves query/hash', async () => {
-    const { router } = await createRouterWithAuthState()
-    const adminRoute = router.getRoutes().find((route) => route.path === '/admin/:pathMatch(.*)*')
+  it(
+    'redirects admin users from /editor/* to /admin/*',
+    async () => {
+      const { router } = await createRouterWithAuthState({
+        isAuthenticated: true,
+        isAdmin: true,
+        canAccessManagement: true,
+      })
 
-    expect(adminRoute).toBeTruthy()
-    expect(typeof adminRoute.redirect).toBe('function')
+      await router.push('/editor/users?tab=roles#section')
 
-    const redirected = adminRoute.redirect({
-      params: { pathMatch: ['users', '42'] },
-      query: { tab: 'roles' },
-      hash: '#section',
+      expect(router.currentRoute.value.path).toBe('/admin/users')
+      expect(router.currentRoute.value.query.tab).toBe('roles')
+      expect(router.currentRoute.value.hash).toBe('#section')
+    },
+    15000
+  )
+
+  it('redirects editor users from /admin/* to /editor/*', async () => {
+    const { router } = await createRouterWithAuthState({
+      isAuthenticated: true,
+      isAdmin: false,
+      canAccessManagement: true,
     })
 
-    expect(redirected).toEqual({
-      path: '/editor/users/42',
-      query: { tab: 'roles' },
-      hash: '#section',
-    })
+    await router.push('/admin/terms?search=a#s')
+
+    expect(router.currentRoute.value.path).toBe('/editor/terms')
+    expect(router.currentRoute.value.query.search).toBe('a')
+    expect(router.currentRoute.value.hash).toBe('#s')
   })
 
   it(
@@ -77,7 +95,7 @@ describe('router', () => {
       canAccessManagement: true,
     })
 
-    await router.push('/editor/users')
+    await router.push('/admin/users')
 
     expect(router.currentRoute.value.path).toBe('/')
   })
@@ -89,7 +107,29 @@ describe('router', () => {
       canAccessManagement: false,
     })
 
-    await router.push('/editor')
+    await router.push('/admin')
+
+    expect(router.currentRoute.value.path).toBe('/')
+  })
+
+  it('allows teacher tools route for users with teacher permissions', async () => {
+    const { router } = await createRouterWithAuthState({
+      isAuthenticated: true,
+      hasPermission: vi.fn().mockImplementation((permissionName) => permissionName === 'glossary.approve'),
+    })
+
+    await router.push('/teacher/tools')
+
+    expect(router.currentRoute.value.path).toBe('/teacher/tools')
+  })
+
+  it('blocks teacher tools route without required permissions', async () => {
+    const { router } = await createRouterWithAuthState({
+      isAuthenticated: true,
+      hasPermission: vi.fn().mockReturnValue(false),
+    })
+
+    await router.push('/teacher/tools')
 
     expect(router.currentRoute.value.path).toBe('/')
   })
@@ -142,16 +182,18 @@ describe('router', () => {
       })
 
       const routesToVisit = [
-        '/editor',
-        '/editor/glossaries',
-        '/editor/terms',
-        '/editor/users',
-        '/editor/editor-role-requests',
-        '/editor/languages',
-        '/editor/references',
-        '/editor/fields',
-        '/editor/field-groups',
-        '/editor/comments',
+        '/admin',
+        '/admin/glossaries',
+        '/admin/terms',
+        '/admin/users',
+        '/admin/editor-role-requests',
+        '/admin/audit-logs',
+        '/admin/languages',
+        '/admin/references',
+        '/admin/fields',
+        '/admin/field-groups',
+        '/admin/comments',
+        '/teacher/tools',
         '/glossaries/1',
         '/terms/1',
         '/my-comments',

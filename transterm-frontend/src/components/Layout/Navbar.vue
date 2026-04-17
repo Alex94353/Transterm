@@ -23,8 +23,12 @@
             <router-link to="/my-comments">My Comments</router-link>
           </el-menu-item>
 
-          <el-menu-item v-if="authStore.canAccessManagement" index="/editor">
-            <router-link to="/editor">{{ managementLabel }}</router-link>
+          <el-menu-item v-if="canSeeTeacherTools" index="/teacher/tools">
+            <router-link to="/teacher/tools">Teacher Tools</router-link>
+          </el-menu-item>
+
+          <el-menu-item v-if="authStore.canAccessManagement" :index="managementBasePath">
+            <router-link :to="managementBasePath">{{ managementLabel }}</router-link>
           </el-menu-item>
 
           <el-sub-menu v-if="authStore.isAuthenticated" index="user">
@@ -91,8 +95,16 @@ onBeforeMount(() => {
 const activeMenu = computed(() => {
   const path = router.currentRoute.value.path
 
+  if (path.startsWith('/admin')) {
+    return '/admin'
+  }
+
   if (path.startsWith('/editor')) {
     return '/editor'
+  }
+
+  if (path.startsWith('/teacher/tools')) {
+    return '/teacher/tools'
   }
 
   if (path.startsWith('/glossaries')) {
@@ -108,6 +120,18 @@ const managementLabel = computed(() => {
   }
 
   return 'Editor'
+})
+
+const managementBasePath = computed(() => (authStore.isAdmin ? '/admin' : '/editor'))
+
+const canSeeTeacherTools = computed(() => {
+  if (!authStore.isAuthenticated) return false
+
+  return (
+    authStore.isAdmin ||
+    authStore.hasPermission?.('glossary.approve') ||
+    authStore.hasPermission?.('editor.assign')
+  )
 })
 
 const handleMenuSelect = (key) => {

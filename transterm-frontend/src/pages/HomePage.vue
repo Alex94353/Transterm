@@ -26,7 +26,7 @@
               type="warning"
               plain
               size="large"
-              @click="$router.push('/editor')"
+              @click="$router.push(managementBasePath)"
             >
               Management
             </el-button>
@@ -95,6 +95,7 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import MainLayout from '../components/Layout/MainLayout.vue'
@@ -102,6 +103,7 @@ import { DocumentCopy, Search, ChatDotRound } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
+const managementBasePath = computed(() => (authStore.isAdmin ? '/admin' : '/editor'))
 
 const goToGlossaries = () => {
   router.push('/glossaries')

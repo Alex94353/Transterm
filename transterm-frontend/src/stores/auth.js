@@ -194,6 +194,8 @@ export const useAuthStore = defineStore('auth', () => {
     isAdmin,
     isEditor,
     canAccessManagement,
+    hasRole,
+    hasPermission,
     register,
     resendVerificationEmail,
     login,

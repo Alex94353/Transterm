@@ -53,7 +53,7 @@
     <h3>Management</h3>
     <el-row :gutter="20">
         <el-col :xs="24" :sm="12" :md="8">
-          <el-card class="admin-menu-card" @click="$router.push('/editor/glossaries')">
+          <el-card class="admin-menu-card" @click="goToManagement('/glossaries')">
             <template #header>
               <el-icon><document-copy /></el-icon>
               Glossaries
@@ -63,7 +63,7 @@
         </el-col>
 
         <el-col :xs="24" :sm="12" :md="8">
-          <el-card class="admin-menu-card" @click="$router.push('/editor/terms')">
+          <el-card class="admin-menu-card" @click="goToManagement('/terms')">
             <template #header>
               <el-icon><menu-icon /></el-icon>
               Terms
@@ -73,7 +73,7 @@
         </el-col>
 
         <el-col v-if="authStore.isAdmin" :xs="24" :sm="12" :md="8">
-          <el-card class="admin-menu-card" @click="$router.push('/editor/users')">
+          <el-card class="admin-menu-card" @click="goToManagement('/users')">
             <template #header>
               <el-icon><user /></el-icon>
               Users
@@ -83,13 +83,13 @@
         </el-col>
 
         <el-col v-if="authStore.isAdmin" :xs="24" :sm="12" :md="8">
-          <el-card class="admin-menu-card" @click="$router.push('/editor/editor-role-requests')">
+          <el-card class="admin-menu-card" @click="goToManagement('/editor-role-requests')">
             <template #header>
               <el-icon><bell /></el-icon>
               Editor Requests
             </template>
             <p>
-              Review access requests from User/Student accounts
+              Review access requests from Student/Teacher accounts
               <span v-if="stats.pendingEditorRequests > 0">
                 ({{ stats.pendingEditorRequests }} pending)
               </span>
@@ -98,7 +98,17 @@
         </el-col>
 
         <el-col v-if="authStore.isAdmin" :xs="24" :sm="12" :md="8">
-          <el-card class="admin-menu-card" @click="$router.push('/editor/languages')">
+          <el-card class="admin-menu-card" @click="goToManagement('/audit-logs')">
+            <template #header>
+              <el-icon><document /></el-icon>
+              Audit Logs
+            </template>
+            <p>Review critical actions: role changes, approvals, bans, and deletions</p>
+          </el-card>
+        </el-col>
+
+        <el-col v-if="authStore.isAdmin" :xs="24" :sm="12" :md="8">
+          <el-card class="admin-menu-card" @click="goToManagement('/languages')">
             <template #header>
               <el-icon><connection /></el-icon>
               Languages
@@ -108,7 +118,7 @@
         </el-col>
 
         <el-col v-if="authStore.isAdmin" :xs="24" :sm="12" :md="8">
-          <el-card class="admin-menu-card" @click="$router.push('/editor/fields')">
+          <el-card class="admin-menu-card" @click="goToManagement('/fields')">
             <template #header>
               <el-icon><collection-tag /></el-icon>
               Fields
@@ -118,7 +128,7 @@
         </el-col>
 
         <el-col v-if="authStore.isAdmin" :xs="24" :sm="12" :md="8">
-          <el-card class="admin-menu-card" @click="$router.push('/editor/field-groups')">
+          <el-card class="admin-menu-card" @click="goToManagement('/field-groups')">
             <template #header>
               <el-icon><folder-opened /></el-icon>
               Field Groups
@@ -128,7 +138,7 @@
         </el-col>
 
         <el-col v-if="authStore.isAdmin" :xs="24" :sm="12" :md="8">
-          <el-card class="admin-menu-card" @click="$router.push('/editor/references')">
+          <el-card class="admin-menu-card" @click="goToManagement('/references')">
             <template #header>
               <el-icon><link-icon /></el-icon>
               References
@@ -138,7 +148,7 @@
         </el-col>
 
         <el-col v-if="authStore.isAdmin" :xs="24" :sm="12" :md="8">
-          <el-card class="admin-menu-card" @click="$router.push('/editor/comments')">
+          <el-card class="admin-menu-card" @click="goToManagement('/comments')">
             <template #header>
               <el-icon><chat-dot-round /></el-icon>
               Comments
@@ -153,6 +163,7 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { ElMessage, ElNotification } from 'element-plus'
+import { useRouter } from 'vue-router'
 import AdminPageShell from '../components/Admin/AdminPageShell.vue'
 import adminService from '../services/adminService'
 import { isRequestCanceled } from '../services/api'
@@ -167,10 +178,13 @@ import {
   Link as LinkIcon,
   ChatDotRound,
   Bell,
+  Document,
 } from '@element-plus/icons-vue'
 
 const authStore = useAuthStore()
+const router = useRouter()
 const dashboardTitle = computed(() => (authStore.isAdmin ? 'Admin Dashboard' : 'Editor Dashboard'))
+const managementBasePath = computed(() => (authStore.isAdmin ? '/admin' : '/editor'))
 const stats = ref({
   users: 0,
   glossaries: 0,
@@ -180,6 +194,10 @@ const stats = ref({
 })
 let latestStatsRequestId = 0
 let lastPendingNotificationCount = 0
+
+const goToManagement = (suffix = '') => {
+  router.push(`${managementBasePath.value}${suffix}`)
+}
 
 const extractTotal = (response) => {
   const payload = response?.data

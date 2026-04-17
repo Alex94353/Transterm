@@ -10,6 +10,7 @@ const shared = vi.hoisted(() => ({
     isAuthenticated: true,
     canAccessManagement: true,
     isAdmin: true,
+    hasPermission: vi.fn(),
     user: { name: 'Alex' },
     logout: vi.fn(),
   },
@@ -55,6 +56,8 @@ describe('Navbar', () => {
     shared.authStore.isAuthenticated = true
     shared.authStore.canAccessManagement = true
     shared.authStore.isAdmin = true
+    shared.authStore.hasPermission.mockReset()
+    shared.authStore.hasPermission.mockReturnValue(false)
     shared.authStore.user = { name: 'Alex' }
   })
 
@@ -88,5 +91,15 @@ describe('Navbar', () => {
     const wrapper = buildWrapper()
 
     expect(wrapper.get('[data-test="menu"]').attributes('data-active')).toBe('/editor')
+  })
+
+  it('shows Teacher Tools item for users with glossary.approve permission', () => {
+    shared.authStore.isAdmin = false
+    shared.authStore.canAccessManagement = false
+    shared.authStore.hasPermission.mockImplementation((permissionName) => permissionName === 'glossary.approve')
+
+    const wrapper = buildWrapper()
+
+    expect(wrapper.text()).toContain('Teacher Tools')
   })
 })
